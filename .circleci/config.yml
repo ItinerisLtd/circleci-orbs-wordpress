@@ -23,54 +23,51 @@ workflows:
           filters:
             branches:
               only: master
-      - filters:
-          branches:
-          only: master
     jobs:
       - build-percy-docker:
           name: php-7.3-ruby-2.6.1
-          php_version: 7.3
-          ruby_version: 2.6.1
+          php_version: '7.3'
+          ruby_version: '2.6.1'
       - build-percy-docker:
           name: php-7.3-ruby-2.6.0
-          php_version: 7.3
-          ruby_version: 2.6.0
+          php_version: '7.3'
+          ruby_version: '2.6.0'
       - build-percy-docker:
           name: php-7.2-ruby-2.6.1
-          php_version: 7.2
-          ruby_version: 2.6.1
+          php_version: '7.2'
+          ruby_version: '2.6.1'
       - build-percy-docker:
           name: php-7.2-ruby-2.6.0
-          php_version: 7.2
-          ruby_version: 2.6.0
+          php_version: '7.2'
+          ruby_version: '2.6.0'
 
   build-percy-docker-on-push:
     jobs:
       - build-percy-docker:
           name: php-7.3-ruby-2.6.1
-          php_version: 7.3
-          ruby_version: 2.6.1
+          php_version: '7.3'
+          ruby_version: '2.6.1'
           filters:
             branches:
               only: master
       - build-percy-docker:
           name: php-7.3-ruby-2.6.0
-          php_version: 7.3
-          ruby_version: 2.6.0
+          php_version: '7.3'
+          ruby_version: '2.6.0'
           filters:
             branches:
               only: master
       - build-percy-docker:
           name: php-7.2-ruby-2.6.1
-          php_version: 7.2
-          ruby_version: 2.6.1
+          php_version: '7.2'
+          ruby_version: '2.6.1'
           filters:
             branches:
               only: master
       - build-percy-docker:
           name: php-7.2-ruby-2.6.0
-          php_version: 7.2
-          ruby_version: 2.6.0
+          php_version: '7.2'
+          ruby_version: '2.6.0'
           filters:
             branches:
               only: master
