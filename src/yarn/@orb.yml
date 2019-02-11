@@ -1,0 +1,100 @@
+version: 2.1
+
+############################################################################################
+# GitHub: https://github.com/ItinerisLtd/circleci-orbs-roots/blob/master/src/yarn/@orb.yml #
+############################################################################################
+
+description: |
+  Wrapper for yarn
+
+commands:
+  restore_yarn_cache:
+    steps:
+      - restore_cache:
+          keys:
+            - v0-itinerisltd-yarn-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-
+            - v0-itinerisltd-yarn-cache-{{ arch }}-{{ .Branch }}-
+            - v0-itinerisltd-yarn-cache-{{ arch }}-
+
+  save_yarn_cache:
+    steps:
+      - save_cache:
+          key: v0-itinerisltd-yarn-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
+          paths:
+            - ~/.yarn/cache
+
+  exec:
+    description: |
+        Execute `$ yarn xxx` commands at `cwd`
+    parameters:
+      command:
+        type: string
+        description: command name to run
+      cwd:
+        type: string
+        description: directory path to yarn project
+        default: .
+      args:
+        type: string
+        description: extra arguments (execpt `--cwd`)
+        default: ''
+    steps:
+      - run: yarn --cwd=<< parameters.cwd >> << parameters.args >> << parameters.command >>
+
+jobs:
+  install:
+    description: |
+      Run `$ yarn install` at `cwd` with caching
+    parameters:
+      install_args:
+        type: string
+        description: yarn install arguments
+        default: --frozen-lockfile
+      cwd:
+        type: string
+        description: directory path to yarn project
+        default: .
+      executor:
+        type: executor
+        default: default
+    executor: << parameters.executor >>
+    working_directory: ~/project
+    steps:
+      - run: node --version
+      - run: yarn versions
+      - checkout
+      - restore_yarn_cache
+      - exec:
+          command: install
+          cwd: << parameters.cwd >>
+          args: << parameters.install_args >>
+      - save_yarn_cache
+
+executors:
+  default:
+    parameters:
+      image:
+        type: string
+        default: 'circleci/node:10'
+    docker:
+      - image: << parameters.image >>
+
+examples:
+  yarn-build:
+    description: |
+      Execute `$ yarn build` with NodeJS 8 at `web/app/themes/sage`
+    usage:
+      version: 2.1
+      orbs:
+        yarn: itinerisltd/yarn@volatile
+      workflows:
+        yarn-build:
+          jobs:
+            - yarn/install:
+                name: yarn-build
+                executor: 'circleci/node:8'
+                working_dir: web/app/themes/sage
+                post-steps:
+                  - yarn/exec:
+                      command: build
+                      cwd: web/app/themes/sage
