@@ -56,7 +56,7 @@ jobs:
         default: .
       executor:
         type: executor
-        default: php_executor
+        default: default
     executor: << parameters.executor >>
     working_directory: ~/project
     steps:
@@ -72,7 +72,7 @@ jobs:
       - save_composer_cache
 
 executors:
-  php_executor:
+  default:
     parameters:
       image:
         type: string
