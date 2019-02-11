@@ -27,7 +27,7 @@ RUN sudo apt-get -q update && \
     sudo apt-get clean && sudo apt-get -y autoremove && sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Update gem and bundler
-RUN echo "gem: --no-ri --no-rdoc" > /home/circleci/.gemrc && \
+RUN echo "gem: --no-document" > /home/circleci/.gemrc && \
     gem update --system && \
     gem update --force bundler
 
