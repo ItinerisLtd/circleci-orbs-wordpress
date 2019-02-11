@@ -11,7 +11,7 @@ jobs:
     steps:
       - checkout
       - run: docker build --tag itinerisltd/circleci-percy-anywhere-wp:php-<< parameters.php_version >>-ruby-<< parameters.ruby_version >> --build-arg PHP_VERSION=<< parameters.php_version >> --build-arg RUBY_VERSION=<< parameters.ruby_version >> src/percy
-      - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+      - run: echo $DOCKER_PASS | docker login --username $DOCKER_USER --password-stdin
       - run: docker push itinerisltd/circleci-percy-anywhere-wp:php-<< parameters.php_version >>-ruby-<< parameters.ruby_version >>
 
 workflows:
