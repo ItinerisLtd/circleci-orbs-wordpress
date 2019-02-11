@@ -1,8 +1,8 @@
 version: 2.1
 
-###############################################################################################
+################################################################################################
 # GitHub: https://github.com/ItinerisLtd/circleci-orbs-roots/blob/master/src/composer/@orb.yml #
-###############################################################################################
+################################################################################################
 
 description: |
   Wrapper for composer
@@ -31,15 +31,15 @@ commands:
         type: string
         description: directory path to composer project
         default: .
-      script:
+      command:
         type: string
-        description: script name to run
+        description: the command to execute
       args:
         type: string
         description: extra arguments (execpt `--working-dir`)
         default: ''
     steps:
-      - run: composer << parameters.script >> --working-dir=<< parameters.working_dir >> << parameters.args >>
+      - run: composer << parameters.command >> --working-dir=<< parameters.working_dir >> << parameters.args >>
 
 jobs:
   install:
@@ -56,7 +56,7 @@ jobs:
         default: .
       executor:
         type: executor
-        default: php_executor
+        default: default
     executor: << parameters.executor >>
     working_directory: ~/project
     steps:
@@ -67,12 +67,12 @@ jobs:
       - restore_composer_cache
       - exec:
           working_dir: << parameters.working_dir >>
-          script: install
+          command: install
           args: << parameters.install_args >>
       - save_composer_cache
 
 executors:
-  php_executor:
+  default:
     parameters:
       image:
         type: string
@@ -98,4 +98,4 @@ examples:
                 post-steps:
                   - composer/exec:
                       working_dir: web/app/themes/sage
-                      script: style:check
+                      command: style:check
