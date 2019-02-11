@@ -31,15 +31,15 @@ commands:
         type: string
         description: directory path to composer project
         default: .
-      script:
+      command:
         type: string
-        description: script name to run
+        description: the command to execute
       args:
         type: string
         description: extra arguments (execpt `--working-dir`)
         default: ''
     steps:
-      - run: composer << parameters.script >> --working-dir=<< parameters.working_dir >> << parameters.args >>
+      - run: composer << parameters.command >> --working-dir=<< parameters.working_dir >> << parameters.args >>
 
 jobs:
   install:
@@ -67,7 +67,7 @@ jobs:
       - restore_composer_cache
       - exec:
           working_dir: << parameters.working_dir >>
-          script: install
+          command: install
           args: << parameters.install_args >>
       - save_composer_cache
 
@@ -98,4 +98,4 @@ examples:
                 post-steps:
                   - composer/exec:
                       working_dir: web/app/themes/sage
-                      script: style:check
+                      command: style:check
