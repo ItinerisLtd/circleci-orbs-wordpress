@@ -52,9 +52,9 @@ RUN wget "https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-${PHANTOMJS_
     sudo chmod +x "phantomjs-${PHANTOMJS_VERSION}-linux-x86_64/bin/phantomjs" && \
     sudo mv "phantomjs-${PHANTOMJS_VERSION}-linux-x86_64/bin/phantomjs" /usr/local/bin/phantomjs
 
-# ################
-# # wp-cli-build #
-# ################
+################
+# wp-cli-build #
+################
 
 # # Use the same php docker image as base to avoid surprises
 FROM "circleci/php:${PHP_VERSION}" AS wp-cli-build
@@ -75,9 +75,9 @@ RUN gpg --dearmor wp-cli.pgp && \
 RUN sudo chmod +x wp-cli.phar && \
     sudo mv wp-cli.phar /usr/local/bin/wp
 
-# ##########
-# # actual #
-# ##########
+##########
+# actual #
+##########
 
 FROM "circleci/php:${PHP_VERSION}"
 
