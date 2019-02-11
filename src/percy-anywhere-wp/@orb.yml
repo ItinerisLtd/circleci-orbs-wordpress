@@ -1,0 +1,75 @@
+version: 2.1
+
+#########################################################################################################
+# GitHub: https://github.com/ItinerisLtd/circleci-orbs-roots/blob/master/src/percy-anywhere-wp/@orb.yml #
+#########################################################################################################
+
+description: |
+  Take percy.io snapshots at Bedrock (WordPress) projects
+
+jobs:
+  snapshot:
+    parameters:
+      executor:
+        type: executor
+        default: default
+      file:
+        type: string
+        description: ruby file that contain your snapshot tests
+        default: percy.rb
+      dot_env:
+        type: string
+        description: .env file that contain non-secret environment-specific variables
+        default: .env.percy
+    executor: << parameters.executor >>
+    working_directory: ~/project
+    environment:
+      PERCY_DEBUG: '1'
+      CYPRESS_baseUrl: http://localhost:8080
+      BUNDLE_PATH: bundle/vendor
+    steps:
+      - run: ruby --version
+      - run: bundle --version
+      - run: wp --info
+      - run: which mysql
+      - run: phantomjs --version
+      - run: php --version
+      - run: composer --version
+      - restore_cache:
+          keys:
+            - v0-percy-bundle-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-
+            - v0-percy-bundle-cache-{{ arch }}-{{ .Branch }}-
+            - v0-percy-bundle-cache-{{ arch }}-
+      - run: bundle install --deployment --jobs=4 --retry=3
+      - save_cache:
+          key: v0-percy-bundle-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
+          paths:
+            - bundle/vendor
+      - run: cp << parameters.dot_env >> .env
+      - run: wp db reset --yes --skip-packages --skip-themes --skip-plugins
+      - run: wp core install --url='http://localhost:8080' --title=Percy --admin_user=percy --admin_email='percy@circleci.test' --skip-email --skip-packages --skip-themes --skip-plugins
+
+      # TODO: Allow using other database migration tools
+      - run: wp plugin activate wp-migrate-db-pro wp-migrate-db-pro-cli --skip-packages --skip-themes --skip-plugins
+      - run: wp migratedb pull $WP_MIGRATE_DB_URL $WP_MIGRATE_DB_SECRET_KEY
+
+      - run: wp rewrite flush
+      - run:
+          command: wp server --docroot=web
+          background: true
+      - run: bundle exec ruby << parameters.file >>
+
+executors:
+  default:
+    parameters:
+      web_image:
+        type: string
+        default: 'itinerisltd/circleci-php-percy-wp:php-7.3-ruby-2.6.1'
+      db_image:
+        type: string
+        default: 'circleci/mariadb:latest-ram'
+    docker:
+        - image: << parameters.web_image >>
+        - image: << parameters.db_image >>
+
+# TODO: Add examples
