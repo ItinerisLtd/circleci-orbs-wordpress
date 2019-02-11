@@ -25,7 +25,7 @@ commands:
 
   exec:
     description: |
-        Execute `$ yarn xxx` commands at `working_dir`
+        Execute `$ yarn xxx` commands at `cwd`
     parameters:
       command:
         type: string
@@ -39,51 +39,62 @@ commands:
         description: extra arguments (execpt `--cwd`)
         default: ''
     steps:
-      - run: yarn << parameters.command >> --cwd=<< parameters.cwd >> << parameters.args >>
+      - run: yarn --cwd=<< parameters.cwd >> << parameters.args >> << parameters.command >>
 
 jobs:
   install:
-    yarn-install:
+    description: |
+      Run `$ yarn install` at `cwd` with caching
     parameters:
-      yarn_install_args:
+      install_args:
         type: string
         description: yarn install arguments
         default: --frozen-lockfile
-      sage_directory:
+      cwd:
         type: string
-        description: directory path to sage theme
-        default: web/app/themes/sage
+        description: directory path to yarn project
+        default: .
       executor:
         type: executor
-        default: node_executor
+        default: default
     executor: << parameters.executor >>
     working_directory: ~/project
     steps:
       - run: node --version
       - run: yarn versions
       - checkout
-      - restore_cache:
-          keys:
-            - v0-yarn-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-
-            - v0-yarn-cache-{{ arch }}-{{ .Branch }}-
-            - v0-yarn-cache-{{ arch }}-
-      - run:
-          command: yarn install --frozen-lockfile
-          working_directory: << parameters.sage_directory >>
-      - save_cache:
-          key: v0-yarn-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
-          paths:
-            - ~/.cache/yarn
-            - << parameters.sage_directory >>/node_modules
-      - run:
-          command: yarn build:production
-          working_directory: << parameters.sage_directory >>
+      - restore_yarn_cache
+      - exec:
+          command: install
+          cwd: << parameters.cwd >>
+          args: << parameters.install_args >>
+      - save_yarn_cache
 
 executors:
-  node_executor:
+  default:
     parameters:
       image:
         type: string
         default: 'circleci/node:10'
     docker:
       - image: << parameters.image >>
+
+examples:
+  yarn-build:
+    description: |
+      Execute `$ yarn build` with NodeJS 8 at `web/app/themes/sage`
+    usage:
+      version: 2.1
+      orbs:
+        yarn: itinerisltd/yarn@volatile
+      workflows:
+        yarn-build:
+          jobs:
+            - yarn/install:
+                name: yarn-build
+                executor: 'circleci/node:8'
+                working_dir: web/app/themes/sage
+                post-steps:
+                  - yarn/exec:
+                      command: build
+                      cwd: web/app/themes/sage
