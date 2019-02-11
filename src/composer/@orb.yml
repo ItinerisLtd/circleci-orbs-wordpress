@@ -1,0 +1,101 @@
+version: 2.1
+
+###############################################################################################
+# GitHub: https://github.com/ItinerisLtd/circleci-orbs-roots/blob/master/src/composer/@orb.yml #
+###############################################################################################
+
+description: |
+  Wrapper for composer
+
+commands:
+  restore_composer_cache:
+    steps:
+      - restore_cache:
+          keys:
+            - v0-itinerisltd-composer-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-
+            - v0-itinerisltd-composer-cache-{{ arch }}-{{ .Branch }}-
+            - v0-itinerisltd-composer-cache-{{ arch }}-
+
+  save_composer_cache:
+    steps:
+      - save_cache:
+          key: v0-itinerisltd-composer-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
+          paths:
+            - ~/.composer/cache
+
+  exec:
+    description: |
+        Execute `$ composer xxx` commands at `working_dir`
+    parameters:
+      working_dir:
+        type: string
+        description: directory path to composer project
+        default: .
+      script:
+        type: string
+        description: script name to run
+      args:
+        type: string
+        description: extra arguments (execpt `--working-dir`)
+        default: ''
+    steps:
+      - run: composer << parameters.script >> --working-dir=<< parameters.working_dir >> << parameters.args >>
+
+jobs:
+  install:
+    description: |
+      Run `$ composer install` at `working_dir` with caching
+    parameters:
+      install_args:
+        type: string
+        description: composer install arguments
+        default: --prefer-dist --no-interaction
+      working_dir:
+        type: string
+        description: directory path to composer project
+        default: .
+      executor:
+        type: executor
+        default: php_executor
+    executor: << parameters.executor >>
+    working_directory: ~/project
+    steps:
+      - run: php --version
+      - run: sudo composer self-update
+      - run: composer --version
+      - checkout
+      - restore_composer_cache
+      - exec:
+          working_dir: << parameters.working_dir >>
+          script: install
+          args: << parameters.install_args >>
+      - save_composer_cache
+
+executors:
+  php_executor:
+    parameters:
+      image:
+        type: string
+        default: 'circleci/php:7.3'
+    docker:
+      - image: << parameters.image >>
+
+examples:
+  style-check:
+    description: |
+      Execute `$ composer style:check` with PHP 7.2 at `web/app/themes/sage`
+    usage:
+      version: 2.1
+      orbs:
+        composer: itinerisltd/composer@volatile
+      workflows:
+        style-check:
+          jobs:
+            - composer/install:
+                name: sage-style-check
+                executor: 'circleci/php:7.2'
+                working_dir: web/app/themes/sage
+                post-steps:
+                  - composer/exec:
+                      working_dir: web/app/themes/sage
+                      script: style:check
