@@ -1,0 +1,89 @@
+version: 2.1
+
+############################################################################################
+# GitHub: https://github.com/ItinerisLtd/circleci-orbs-roots/blob/master/src/yarn/@orb.yml #
+############################################################################################
+
+description: |
+  Wrapper for yarn
+
+commands:
+  restore_yarn_cache:
+    steps:
+      - restore_cache:
+          keys:
+            - v0-itinerisltd-yarn-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-
+            - v0-itinerisltd-yarn-cache-{{ arch }}-{{ .Branch }}-
+            - v0-itinerisltd-yarn-cache-{{ arch }}-
+
+  save_yarn_cache:
+    steps:
+      - save_cache:
+          key: v0-itinerisltd-yarn-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
+          paths:
+            - ~/.yarn/cache
+
+  exec:
+    description: |
+        Execute `$ yarn xxx` commands at `working_dir`
+    parameters:
+      command:
+        type: string
+        description: command name to run
+      cwd:
+        type: string
+        description: directory path to yarn project
+        default: .
+      args:
+        type: string
+        description: extra arguments (execpt `--cwd`)
+        default: ''
+    steps:
+      - run: yarn << parameters.command >> --cwd=<< parameters.cwd >> << parameters.args >>
+
+jobs:
+  install:
+    yarn-install:
+    parameters:
+      yarn_install_args:
+        type: string
+        description: yarn install arguments
+        default: --frozen-lockfile
+      sage_directory:
+        type: string
+        description: directory path to sage theme
+        default: web/app/themes/sage
+      executor:
+        type: executor
+        default: node_executor
+    executor: << parameters.executor >>
+    working_directory: ~/project
+    steps:
+      - run: node --version
+      - run: yarn versions
+      - checkout
+      - restore_cache:
+          keys:
+            - v0-yarn-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-
+            - v0-yarn-cache-{{ arch }}-{{ .Branch }}-
+            - v0-yarn-cache-{{ arch }}-
+      - run:
+          command: yarn install --frozen-lockfile
+          working_directory: << parameters.sage_directory >>
+      - save_cache:
+          key: v0-yarn-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
+          paths:
+            - ~/.cache/yarn
+            - << parameters.sage_directory >>/node_modules
+      - run:
+          command: yarn build:production
+          working_directory: << parameters.sage_directory >>
+
+executors:
+  node_executor:
+    parameters:
+      image:
+        type: string
+        default: 'circleci/node:10'
+    docker:
+      - image: << parameters.image >>

@@ -27,13 +27,13 @@ commands:
     description: |
         Execute `$ composer xxx` commands at `working_dir`
     parameters:
+      command:
+        type: string
+        description: the command to execute
       working_dir:
         type: string
         description: directory path to composer project
         default: .
-      command:
-        type: string
-        description: the command to execute
       args:
         type: string
         description: extra arguments (execpt `--working-dir`)
