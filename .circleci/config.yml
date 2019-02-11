@@ -10,7 +10,7 @@ jobs:
         type: string
     steps:
       - checkout
-      - run: docker build --tag itinerisltd/percy-anywhere-wp:php-<< parameters.php_version >>-ruby-<< parameters.ruby_version >> --build-arg PHP_VERSION=<< parameters.php_version >> --build-arg RUBY_VERSION=<< parameters.ruby_version >> src/percy
+      - run: docker build --tag itinerisltd/percy-anywhere-wp:php-<< parameters.php_version >>-ruby-<< parameters.ruby_version >> --build-arg PHP_VERSION=<< parameters.php_version >> --build-arg RUBY_VERSION=<< parameters.ruby_version >> src/percy-anywhere-wp
       - run: echo $DOCKER_PASS | docker login --username $DOCKER_USER --password-stdin
       - run: docker push itinerisltd/percy-anywhere-wp:php-<< parameters.php_version >>-ruby-<< parameters.ruby_version >>
 

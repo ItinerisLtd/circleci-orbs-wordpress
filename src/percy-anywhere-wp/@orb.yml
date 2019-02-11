@@ -64,7 +64,7 @@ executors:
     parameters:
       web_image:
         type: string
-        default: 'itinerisltd/circleci-php-percy-wp:php-7.3-ruby-2.6.1'
+        default: 'itinerisltd/percy-anywhere-wp:php-7.3-ruby-2.6.1'
       db_image:
         type: string
         default: 'circleci/mariadb:latest-ram'
