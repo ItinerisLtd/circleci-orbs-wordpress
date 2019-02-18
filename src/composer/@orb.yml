@@ -1,11 +1,13 @@
 version: 2.1
 
-################################################################################################
-# GitHub: https://github.com/ItinerisLtd/circleci-orbs-roots/blob/master/src/composer/@orb.yml #
-################################################################################################
+##################################################################################################
+# GitHub: https://github.com/ItinerisLtd/circleci-orbs-roots/blob/master/src/composer/%40orb.yml #
+# CircleCI: https://circleci.com/orbs/registry/orb/itinerisltd/composer                          #
+##################################################################################################
 
 description: |
   Wrapper for composer
+  Source Code: https://github.com/ItinerisLtd/circleci-orbs-roots/blob/master/src/composer/%40orb.yml
 
 commands:
   restore_composer_cache:
@@ -56,7 +58,7 @@ jobs:
         default: .
       executor:
         type: executor
-        default: default
+        default: latest
     executor: << parameters.executor >>
     working_directory: ~/project
     steps:
@@ -72,13 +74,24 @@ jobs:
       - save_composer_cache
 
 executors:
-  default:
-    parameters:
-      image:
-        type: string
-        default: 'circleci/php:7.3'
+  latest:
     docker:
-      - image: << parameters.image >>
+      - image: 'circleci/php:latest'
+  seven:
+    docker:
+      - image: 'circleci/php:7'
+  seven_three:
+    docker:
+      - image: 'circleci/php:7.3'
+  seven_two:
+    docker:
+      - image: 'circleci/php:7.2'
+  seven_one:
+    docker:
+      - image: 'circleci/php:7.1'
+  seven_zero:
+    docker:
+      - image: 'circleci/php:7.0'
 
 examples:
   style-check:
@@ -93,7 +106,7 @@ examples:
           jobs:
             - composer/install:
                 name: sage-style-check
-                executor: 'circleci/php:7.2'
+                executor: '72'
                 working_dir: web/app/themes/sage
                 post-steps:
                   - composer/exec:
