@@ -1,7 +1,7 @@
 version: 2.1
 
 jobs:
-  build-percy-docker:
+  build-percy-anywhere-wp-docker:
     machine: true
     parameters:
       php_version:
@@ -14,8 +14,19 @@ jobs:
       - run: echo $DOCKER_PASS | docker login --username $DOCKER_USER --password-stdin
       - run: docker push itinerisltd/percy-anywhere-wp:php-<< parameters.php_version >>-ruby-<< parameters.ruby_version >>
 
+  build-tiller-circleci-docker:
+    machine: true
+    parameters:
+      node_version:
+        type: string
+    steps:
+      - checkout
+      - run: docker build --tag itinerisltd/tiller-circleci:node-<< parameters.node_version >> --build-arg NODE_VERSION=<< parameters.node_version >> src/tiller-circleci
+      - run: echo $DOCKER_PASS | docker login --username $DOCKER_USER --password-stdin
+      - run: docker push itinerisltd/tiller-circleci:node-<< parameters.node_version >>
+
 workflows:
-  build-percy-docker-nightly:
+  build-docker-nightly:
     triggers:
       - schedule:
           # Every day at 12am UTC
@@ -24,50 +35,79 @@ workflows:
             branches:
               only: master
     jobs:
-      - build-percy-docker:
-          name: php-7.3-ruby-2.6.1
+      - build-percy-anywhere-wp-docker:
+          name: php-7.3-ruby-2.6.1-percy-anywhere-wp
           php_version: '7.3'
           ruby_version: '2.6.1'
-      - build-percy-docker:
-          name: php-7.3-ruby-2.6.0
+      - build-percy-anywhere-wp-docker:
+          name: php-7.3-ruby-2.6.0-percy-anywhere-wp
           php_version: '7.3'
           ruby_version: '2.6.0'
-      - build-percy-docker:
-          name: php-7.2-ruby-2.6.1
+      - build-percy-anywhere-wp-docker:
+          name: php-7.2-ruby-2.6.1-percy-anywhere-wp
           php_version: '7.2'
           ruby_version: '2.6.1'
-      - build-percy-docker:
-          name: php-7.2-ruby-2.6.0
+      - build-percy-anywhere-wp-docker:
+          name: php-7.2-ruby-2.6.0-percy-anywhere-wp
           php_version: '7.2'
           ruby_version: '2.6.0'
 
-  build-percy-docker-on-push:
+      - build-tiller-circleci-docker:
+          name: node-11-tiller-circleci
+          node_version: '11'
+      - build-tiller-circleci-docker:
+          name: node-10-tiller-circleci
+          node_version: '10'
+      - build-tiller-circleci-docker:
+          name: node-8-tiller-circleci
+          node_version: '8'
+
+  build-docker-on-push:
     jobs:
-      - build-percy-docker:
-          name: php-7.3-ruby-2.6.1
+      - build-percy-anywhere-wp-docker:
+          name: php-7.3-ruby-2.6.1-percy-anywhere-wp
           php_version: '7.3'
           ruby_version: '2.6.1'
           filters:
             branches:
               only: master
-      - build-percy-docker:
-          name: php-7.3-ruby-2.6.0
+      - build-percy-anywhere-wp-docker:
+          name: php-7.3-ruby-2.6.0-percy-anywhere-wp
           php_version: '7.3'
           ruby_version: '2.6.0'
           filters:
             branches:
               only: master
-      - build-percy-docker:
-          name: php-7.2-ruby-2.6.1
+      - build-percy-anywhere-wp-docker:
+          name: php-7.2-ruby-2.6.1-percy-anywhere-wp
           php_version: '7.2'
           ruby_version: '2.6.1'
           filters:
             branches:
               only: master
-      - build-percy-docker:
-          name: php-7.2-ruby-2.6.0
+      - build-percy-anywhere-wp-docker:
+          name: php-7.2-ruby-2.6.0-percy-anywhere-wp
           php_version: '7.2'
           ruby_version: '2.6.0'
+          filters:
+            branches:
+              only: master
+
+      - build-tiller-circleci-docker:
+          name: node-11-tiller-circleci
+          node_version: '11'
+          filters:
+            branches:
+              only: master
+      - build-tiller-circleci-docker:
+          name: node-10-tiller-circleci
+          node_version: '10'
+          filters:
+            branches:
+              only: master
+      - build-tiller-circleci-docker:
+          name: node-8-tiller-circleci
+          node_version: '8'
           filters:
             branches:
               only: master
