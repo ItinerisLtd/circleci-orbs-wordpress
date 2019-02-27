@@ -52,6 +52,7 @@ jobs:
       # TODO: Allow using other database migration tools
       - run: wp plugin activate wp-migrate-db-pro wp-migrate-db-pro-cli --skip-packages --skip-themes --skip-plugins
       - run: wp migratedb pull $WP_MIGRATE_DB_URL $WP_MIGRATE_DB_SECRET_KEY
+      - run: wp core update-db --skip-packages --skip-themes --skip-plugins
 
       - run: wp rewrite flush
       - run:
