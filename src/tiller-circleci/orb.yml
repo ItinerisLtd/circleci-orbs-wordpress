@@ -16,6 +16,9 @@ jobs:
       Expecting Trellis and Bedrock to be 2 separate repositories https://github.com/roots/trellis/issues/883#issuecomment-329052189
       Expecting build steps do not require local Bedrock source code https://github.com/roots/trellis/pull/997 OR https://github.com/roots/trellis/pull/1030
     parameters:
+      known_hosts:
+        type: string
+        description: hosts you exptecetd to connect include VCS and your remote servers
       trellis_repo:
         type: string
         description: trellis repository
@@ -45,7 +48,7 @@ jobs:
     steps:
       - run: mkdir ~/.ssh
       - run: touch ~/.ssh/known_hosts
-      - run: ssh-keyscan -H github.com, bitbucket.org, gitlab.com >> ~/.ssh/known_hosts
+      - run: ssh-keyscan -H << parameters.known_hosts >> >> ~/.ssh/known_hosts
       - run:
           name: Clone Trellis Repo
           command: git clone --verbose --branch << parameters.trellis_branch >> --depth 1 << parameters.trellis_repo >> .
@@ -78,8 +81,6 @@ jobs:
       - deploy:
           command: ansible-playbook --vault-id << parameters.vault_password_file >> deploy.yml -e env=<< parameters.site_env >> -e site=<< parameters.site_name >> -e site_version=$CIRCLE_SHA1 -vvvv
           working_directory: trellis
-          environment:
-            ANSIBLE_HOST_KEY_CHECKING: false
 
 executors:
   default:
@@ -110,6 +111,7 @@ examples:
                 name: deploy-staging
                 requires:
                   - hold
+                known_hosts: github.com, 123.123.123.123
                 trellis_repo: git@github.com:my-name/my-trellis.git
                 site_env: staging
                 site_name: my.example.com
@@ -118,6 +120,9 @@ examples:
                     only: staging
             - tiller-circleci/deploy:
                 name: deploy-production-full-configuration
+                requires:
+                  - hold
+                known_hosts: github.com, 123.123.123.123
                 trellis_repo: git@github.com:my-name/my-trellis.git
                 trellis_branch: my-branch
                 vault_password: '$YOU_SHOULD_SET_VAULT_PASSWORD_VIA_ENVIRONMENT_VARIABLE'
