@@ -1,6 +1,19 @@
 version: 2.1
 
+orbs:
+  circleci-cli: circleci/circleci-cli@0
+
 jobs:
+  vaildate-orb:
+    executor: circleci-cli/default
+    parameters:
+      orb_path:
+        type: string
+    steps:
+      - checkout
+      - run: circleci version
+      - run: circleci orb validate << parameters.orb_path >>
+
   build-percy-anywhere-wp-docker:
     machine: true
     parameters:
@@ -92,3 +105,15 @@ workflows:
 
   build-docker-on-push:
     <<: *build-docker-workflow
+
+  vaildate-orbs:
+    jobs:
+      - vaildate-orb:
+          name: vaildate-composer-orb
+          orb_path: 'src/composer/orb.yml'
+      - vaildate-orb:
+          name: vaildate-percy-anywhere-wp-orb
+          orb_path: 'src/percy-anywhere-wp/orb.yml'
+      - vaildate-orb:
+          name: vaildate-yarn-orb
+          orb_path: 'src/yarn/orb.yml'
