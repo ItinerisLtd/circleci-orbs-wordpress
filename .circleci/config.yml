@@ -38,9 +38,9 @@ jobs:
         type: string
     steps:
       - checkout
-      - run: docker build --tag itinerisltd/tiller-circleci:ansible-<< parameters.ansible_version >>-python-<< parameters.python_version >>node-<< parameters.node_version >> --build-arg ANSIBLE_VERSION=<< parameters.ansible_version >> --build-arg PYTHON_VERSION=<< parameters.python_version >> --build-arg NODE_VERSION=<< parameters.node_version >> src/tiller-circleci
+      - run: docker build --tag itinerisltd/tiller-circleci:ansible-<< parameters.ansible_version >>-python-<< parameters.python_version >>-node-<< parameters.node_version >> --build-arg ANSIBLE_VERSION=<< parameters.ansible_version >> --build-arg PYTHON_VERSION=<< parameters.python_version >> --build-arg NODE_VERSION=<< parameters.node_version >> src/tiller-circleci
       - run: echo $DOCKER_PASS | docker login --username $DOCKER_USER --password-stdin
-      - run: docker push itinerisltd/tiller-circleci:ansible-<< parameters.ansible_version >>-python-<< parameters.python_version >>node-<< parameters.node_version >>
+      - run: docker push itinerisltd/tiller-circleci:ansible-<< parameters.ansible_version >>-python-<< parameters.python_version >>-node-<< parameters.node_version >>
 
 # Wait for https://discuss.circleci.com/t/workflows-seem-incomplete/13461
 only-master-filter: &only-master-filter
@@ -114,6 +114,9 @@ workflows:
       - vaildate-orb:
           name: vaildate-percy-anywhere-wp-orb
           orb_path: 'src/percy-anywhere-wp/orb.yml'
+      - vaildate-orb:
+          name: vaildate-tiller-circleci-orb
+          orb_path: 'src/tiller-circleci/orb.yml'
       - vaildate-orb:
           name: vaildate-yarn-orb
           orb_path: 'src/yarn/orb.yml'

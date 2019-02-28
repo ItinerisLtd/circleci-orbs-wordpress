@@ -1,0 +1,130 @@
+version: 2.1
+
+##########################################################################################################
+# GitHub: https://github.com/ItinerisLtd/circleci-orbs-wordpress/blob/master/src/tiller-circleci/orb.yml #
+# CircleCI: https://circleci.com/orbs/registry/orb/itinerisltd/tiller-circleci                           #
+##########################################################################################################
+
+description: |
+  Deploy Trellis, Bedrock and Sage(optional) via CircleCI.
+  Source Code: https://github.com/ItinerisLtd/circleci-orbs-wordpress/blob/master/src/tiller-circleci/orb.yml
+
+jobs:
+  deploy:
+    description: |
+      Deploy Trellis, Bedrock and Sage(optional) via CircleCI
+      Expecting Trellis and Bedrock to be 2 separate repositories https://github.com/roots/trellis/issues/883#issuecomment-329052189
+      Expecting build steps do not require local Bedrock source code https://github.com/roots/trellis/pull/997 OR https://github.com/roots/trellis/pull/1030
+    parameters:
+      ssh_fingerprint:
+        type: string
+        description: fingerprint of Trellis `web_user` SSH key which has permissions to perform `composer install` and `yarn install`
+      trellis_repo:
+        type: string
+        description: trellis repository
+      trellis_branch:
+        type: string
+        description: trellis branch
+        default: master
+      vault_password:
+        type: string
+        description: ansible vault password
+        default: '$VAULT_PASSWORD'
+      vault_password_file:
+        type: string
+        description: ansible vault password file to use. Must be the same one in ansible.cfg(if applicable)
+        default: .vault_pass
+      site_env:
+        type: string
+        description: the environment to deploy to (staging, production, etc)
+      site_name:
+        type: string
+        description: the WordPress site to deploy (name defined in wordpress_sites)
+      executor:
+        type: executor
+        default: default
+    executor: << parameters.executor >>
+    working_directory: ~/project
+    steps:
+      - add_ssh_keys:
+            fingerprints:
+              - << parameters.ssh_fingerprint >>
+      - run:
+          name: Clone Trellis Repo
+          command: git clone --verbose --branch << parameters.trellis_branch >> --depth 1 << parameters.trellis_repo >> .
+          working_directory: trellis
+      - restore_cache:
+          key: v0-itinerisltd-tiller-circleci-ansible-galaxy-cache-{{ checksum "trellis/requirements.yml" }}
+      - restore_cache:
+          keys:
+            - v0-itinerisltd-tiller-circleci-deploy-cache-{{ .Branch }}-{{ .Revision }}-
+            - v0-itinerisltd-tiller-circleci-deploy-cache-{{ .Branch }}-
+            - v0-itinerisltd-tiller-circleci-deploy-cache-
+      - run:
+          name: Set ansible vault Password
+          command: echo << parameters.vault_password >> > << parameters.vault_password_file >>
+          working_directory: trellis
+      - run:
+          name: Install ansible galaxy roles
+          command: ansible-galaxy install -r requirements.yml -vvvv
+          working_directory: trellis
+      - save_cache:
+          key: v0-itinerisltd-tiller-circleci-ansible-galaxy-cache-{{ checksum "trellis/requirements.yml" }}
+          paths:
+            - trellis/vendor
+      - save_cache:
+          key: v0-itinerisltd-tiller-circleci-deploy-cache-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
+          paths:
+            - /tmp/trellis
+            - /usr/local/share/.cache/yarn/v1
+            - ~/.composer/cache
+      - deploy:
+          command: ansible-playbook --vault-id << parameters.vault_password_file >> deploy.yml -e env=<< parameters.site_env >> -e site=<< parameters.site_name >> -e site_version=$CIRCLE_SHA1 -vvvv
+          working_directory: trellis
+
+executors:
+  default:
+    docker:
+      - image: 'itinerisltd/tiller-circleci:ansible-latest-python-2-node-10'
+
+examples:
+  tiller-circleci-build:
+    description: |
+      Execute `$ tiller-circleci build` with NodeJS 8 at `web/app/themes/sage`
+    usage:
+      version: 2.1
+      orbs:
+        tiller-circleci: itinerisltd/tiller-circleci@volatile
+      workflows:
+        deploy:
+          jobs:
+            - hold: # <<< A job that will require manual approval in the CircleCI web application.
+                type: approval
+                filters:
+                  branches:
+                    only:
+                      - staging
+                      - production
+
+            - tiller-circleci/deploy:
+                name: deploy-staging-minimal
+                ssh_fingerprint: 'SO:ME:FIN:G:ER:PR:IN:T'
+                trellis_repo: git@github.com:my-name/my-site-trellis.git
+                site_env: staging
+                site_name: my-site
+                filters:
+                  branches:
+                    only: staging
+
+            - tiller-circleci/deploy:
+                name: deploy-production-full-configuration
+                ssh_fingerprint: 'SO:ME:FIN:G:ER:PR:IN:T'
+                trellis_repo: git@github.com:my-name/my-site-trellis.git
+                trellis_branch: my-branch
+                vault_password: 'you should set password via envirment variable'
+                vault_password_file: .my_vault_pass
+                site_env: production
+                site_name: my-site
+                filters:
+                  branches:
+                    only: production
