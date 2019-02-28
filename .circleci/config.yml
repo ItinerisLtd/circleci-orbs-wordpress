@@ -25,8 +25,34 @@ jobs:
       - run: echo $DOCKER_PASS | docker login --username $DOCKER_USER --password-stdin
       - run: docker push itinerisltd/tiller-circleci:node-<< parameters.node_version >>
 
+build-docker-workflow: &build-docker-workflow
+  jobs:
+    - build-percy-anywhere-wp-docker:
+        name: php-7.3-ruby-2.6.1-percy-anywhere-wp
+        php_version: '7.3'
+        ruby_version: '2.6.1'
+    - build-percy-anywhere-wp-docker:
+        name: php-7.2-ruby-2.6.1-percy-anywhere-wp
+        php_version: '7.2'
+        ruby_version: '2.6.1'
+    - build-percy-anywhere-wp-docker:
+        name: php-7.1-ruby-2.6.1-percy-anywhere-wp
+        php_version: '7.1'
+        ruby_version: '2.6.1'
+
+    - build-tiller-circleci-docker:
+        name: node-11-tiller-circleci
+        node_version: '11'
+    - build-tiller-circleci-docker:
+        name: node-10-tiller-circleci
+        node_version: '10'
+    - build-tiller-circleci-docker:
+        name: node-8-tiller-circleci
+        node_version: '8'
+
 workflows:
   build-docker-nightly:
+    <<: *build-docker-workflow
     triggers:
       - schedule:
           # Every day at 12am UTC
@@ -34,80 +60,6 @@ workflows:
           filters:
             branches:
               only: master
-    jobs:
-      - build-percy-anywhere-wp-docker:
-          name: php-7.3-ruby-2.6.1-percy-anywhere-wp
-          php_version: '7.3'
-          ruby_version: '2.6.1'
-      - build-percy-anywhere-wp-docker:
-          name: php-7.3-ruby-2.6.0-percy-anywhere-wp
-          php_version: '7.3'
-          ruby_version: '2.6.0'
-      - build-percy-anywhere-wp-docker:
-          name: php-7.2-ruby-2.6.1-percy-anywhere-wp
-          php_version: '7.2'
-          ruby_version: '2.6.1'
-      - build-percy-anywhere-wp-docker:
-          name: php-7.2-ruby-2.6.0-percy-anywhere-wp
-          php_version: '7.2'
-          ruby_version: '2.6.0'
-
-      - build-tiller-circleci-docker:
-          name: node-11-tiller-circleci
-          node_version: '11'
-      - build-tiller-circleci-docker:
-          name: node-10-tiller-circleci
-          node_version: '10'
-      - build-tiller-circleci-docker:
-          name: node-8-tiller-circleci
-          node_version: '8'
 
   build-docker-on-push:
-    jobs:
-      - build-percy-anywhere-wp-docker:
-          name: php-7.3-ruby-2.6.1-percy-anywhere-wp
-          php_version: '7.3'
-          ruby_version: '2.6.1'
-          filters:
-            branches:
-              only: master
-      - build-percy-anywhere-wp-docker:
-          name: php-7.3-ruby-2.6.0-percy-anywhere-wp
-          php_version: '7.3'
-          ruby_version: '2.6.0'
-          filters:
-            branches:
-              only: master
-      - build-percy-anywhere-wp-docker:
-          name: php-7.2-ruby-2.6.1-percy-anywhere-wp
-          php_version: '7.2'
-          ruby_version: '2.6.1'
-          filters:
-            branches:
-              only: master
-      - build-percy-anywhere-wp-docker:
-          name: php-7.2-ruby-2.6.0-percy-anywhere-wp
-          php_version: '7.2'
-          ruby_version: '2.6.0'
-          filters:
-            branches:
-              only: master
-
-      - build-tiller-circleci-docker:
-          name: node-11-tiller-circleci
-          node_version: '11'
-          filters:
-            branches:
-              only: master
-      - build-tiller-circleci-docker:
-          name: node-10-tiller-circleci
-          node_version: '10'
-          filters:
-            branches:
-              only: master
-      - build-tiller-circleci-docker:
-          name: node-8-tiller-circleci
-          node_version: '8'
-          filters:
-            branches:
-              only: master
+    <<: *build-docker-workflow
