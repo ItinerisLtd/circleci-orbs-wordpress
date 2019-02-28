@@ -1,11 +1,13 @@
 version: 2.1
 
-#########################################################################################################
-# GitHub: https://github.com/ItinerisLtd/circleci-orbs-wordpress/blob/master/src/percy-anywhere-wp/@orb.yml #
-#########################################################################################################
+############################################################################################################
+# GitHub: https://github.com/ItinerisLtd/circleci-orbs-wordpress/blob/master/src/percy-anywhere-wp/orb.yml #
+# CircleCI: https://circleci.com/orbs/registry/orb/itinerisltd/percy-anywhere-wp                           #
+############################################################################################################
 
 description: |
   Take percy.io snapshots at Bedrock (WordPress) projects
+  Source Code: https://github.com/ItinerisLtd/circleci-orbs-wordpress/blob/master/src/percy-anywhere-wp/orb.yml
 
 jobs:
   snapshot:

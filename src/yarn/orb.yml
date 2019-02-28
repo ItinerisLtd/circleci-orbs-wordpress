@@ -1,11 +1,13 @@
 version: 2.1
 
-############################################################################################
-# GitHub: https://github.com/ItinerisLtd/circleci-orbs-wordpress/blob/master/src/yarn/@orb.yml #
-############################################################################################
+###############################################################################################
+# GitHub: https://github.com/ItinerisLtd/circleci-orbs-wordpress/blob/master/src/yarn/orb.yml #
+# CircleCI: https://circleci.com/orbs/registry/orb/itinerisltd/yarn                           #
+###############################################################################################
 
 description: |
   Wrapper for yarn
+  Source Code: https://github.com/ItinerisLtd/circleci-orbs-wordpress/blob/master/src/yarn/orb.yml
 
 commands:
   restore_yarn_cache:
