@@ -115,5 +115,8 @@ workflows:
           name: vaildate-percy-anywhere-wp-orb
           orb_path: 'src/percy-anywhere-wp/orb.yml'
       - vaildate-orb:
+          name: vaildate-tiller-circleci-orb
+          orb_path: 'src/tiller-circleci/orb.yml'
+      - vaildate-orb:
           name: vaildate-yarn-orb
           orb_path: 'src/yarn/orb.yml'
