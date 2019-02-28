@@ -1,13 +1,13 @@
 version: 2.1
 
-##################################################################################################
-# GitHub: https://github.com/ItinerisLtd/circleci-orbs-wordpress/blob/master/src/composer/%40orb.yml #
-# CircleCI: https://circleci.com/orbs/registry/orb/itinerisltd/composer                          #
-##################################################################################################
+###################################################################################################
+# GitHub: https://github.com/ItinerisLtd/circleci-orbs-wordpress/blob/master/src/composer/orb.yml #
+# CircleCI: https://circleci.com/orbs/registry/orb/itinerisltd/composer                           #
+###################################################################################################
 
 description: |
   Wrapper for composer
-  Source Code: https://github.com/ItinerisLtd/circleci-orbs-wordpress/blob/master/src/composer/%40orb.yml
+  Source Code: https://github.com/ItinerisLtd/circleci-orbs-wordpress/blob/master/src/composer/orb.yml
 
 commands:
   restore_composer_cache:
@@ -106,7 +106,7 @@ examples:
           jobs:
             - composer/install:
                 name: sage-style-check
-                executor: '72'
+                executor: composer/seven_two
                 working_dir: web/app/themes/sage
                 post-steps:
                   - composer/exec:
