@@ -1,5 +1,5 @@
 ###########################################################################################################
-# GitHub: https://github.com/ItinerisLtd/circleci-orbs-roots/blob/master/src/percy-anywhere-wp/Dockerfile #
+# GitHub: https://github.com/ItinerisLtd/circleci-orbs-wordpress/blob/master/src/percy-anywhere-wp/Dockerfile #
 ###########################################################################################################
 
 ARG PHP_VERSION=7.3

@@ -1,7 +1,7 @@
 version: 2.1
 
 ############################################################################################
-# GitHub: https://github.com/ItinerisLtd/circleci-orbs-roots/blob/master/src/yarn/@orb.yml #
+# GitHub: https://github.com/ItinerisLtd/circleci-orbs-wordpress/blob/master/src/yarn/@orb.yml #
 ############################################################################################
 
 description: |

@@ -1,5 +1,5 @@
 ###########################################################################################################
-# GitHub: https://github.com/ItinerisLtd/circleci-orbs-roots/blob/master/src/tiller-circleci/Dockerfile #
+# GitHub: https://github.com/ItinerisLtd/circleci-orbs-wordpress/blob/master/src/tiller-circleci/Dockerfile #
 ###########################################################################################################
 
 ARG NODE_VERSION=10
