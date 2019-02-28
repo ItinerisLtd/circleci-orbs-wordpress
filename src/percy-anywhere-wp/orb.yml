@@ -15,10 +15,6 @@ jobs:
       executor:
         type: executor
         default: default
-      file:
-        type: string
-        description: ruby file that contain your snapshot tests
-        default: percy.rb
       dot_env:
         type: string
         description: .env file that contain non-secret environment-specific variables
@@ -27,7 +23,6 @@ jobs:
     working_directory: ~/project
     environment:
       PERCY_DEBUG: '1'
-      CYPRESS_baseUrl: http://localhost:8080
       BUNDLE_PATH: bundle/vendor
     steps:
       - run: ruby --version
@@ -55,12 +50,7 @@ jobs:
       - run: wp plugin activate wp-migrate-db-pro wp-migrate-db-pro-cli --skip-packages --skip-themes --skip-plugins
       - run: wp migratedb pull $WP_MIGRATE_DB_URL $WP_MIGRATE_DB_SECRET_KEY
       - run: wp core update-db --skip-packages --skip-themes --skip-plugins
-
       - run: wp rewrite flush
-      - run:
-          command: wp server --docroot=web
-          background: true
-      - run: bundle exec ruby << parameters.file >>
 
 executors:
   default:
@@ -75,4 +65,59 @@ executors:
         - image: << parameters.web_image >>
         - image: << parameters.db_image >>
 
-# TODO: Add examples
+examples:
+  visual-test:
+    description: |
+      Build the Bedrock site (`composer install`, `yarn install` and `yarn build:production`) and take percy.io snapshots.
+    usage:
+      version: 2.1
+
+      orbs:
+        composer: itinerisltd/composer@0
+        yarn: itinerisltd/yarn@0
+        percy-anywhere-wp: itinerisltd/percy-anywhere-wp@0
+
+      workflows:
+        visual-test:
+          jobs:
+            - composer/install:
+                name: bedrock-composer-install
+                install_args: --no-dev --optimize-autoloader --prefer-dist --no-interaction
+                post-steps:
+                  - persist_to_workspace:
+                      root: ~/project
+                      paths:
+                        - vendor
+                        - web
+            - composer/install:
+                name: sage-composer-install
+                install_args: --no-dev --optimize-autoloader --prefer-dist --no-interaction
+                working_dir: web/app/themes/eelga
+                post-steps:
+                  - persist_to_workspace:
+                      root: ~/project
+                      paths:
+                        - web/app/themes/eelga/vendor
+            - yarn/install:
+                name: sage-yarn-build
+                cwd: web/app/themes/eelga
+                post-steps:
+                  - yarn/exec:
+                      command: build:production
+                      cwd: web/app/themes/eelga
+                  - persist_to_workspace:
+                      root: ~/project
+                      paths:
+                        - web/app/themes/eelga/dist
+            - percy-anywhere-wp/snapshot:
+                name: percy-snapshot
+                pre-steps:
+                  - checkout
+                  - attach_workspace:
+                      at: ~/project
+                post-steps:
+                  - run: bundle exec ruby percy.rb
+                requires:
+                  - bedrock-composer-install
+                  - sage-composer-install
+                  - sage-yarn-build
