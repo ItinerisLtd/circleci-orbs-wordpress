@@ -6,13 +6,26 @@ ARG NODE_VERSION=10
 
 FROM "circleci/node:${NODE_VERSION}"
 
-ARG DEBIAN_FRONTEND=noninteractive
+ARG PYTHON_VERSION=2
+ARG ANSIBLE_VERSION=latest
 
-## Ansible
-RUN echo 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main' | sudo tee -a /etc/apt/sources.list && \
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367 && \
-    sudo apt-get update && \
-    sudo apt-get install -q -y --no-install-recommends ansible rsync && \
+ARG DEBIAN_FRONTEND=noninteractive
+WORKDIR /home/circleci
+
+## Python & Ansible
+RUN if [ "$PYTHON_VERSION" = "2" ]; then export PYTHON_VERSION=''; fi && \
+    sudo apt-get -q update && \
+    sudo apt-get install -q -y --no-install-recommends "python${PYTHON_VERSION}-setuptools" "python${PYTHON_VERSION}-yaml" && \
+    sudo "easy_install${PYTHON_VERSION}" pip && \
+    if [ "$ANSIBLE_VERSION" = "latest" ]; then export ANSIBLE_VERSION_CONSTRAINT=''; fi && \
+    if [ "$ANSIBLE_VERSION" != "latest" ]; then export ANSIBLE_VERSION_CONSTRAINT="~=${ANSIBLE_VERSION}"; fi && \
+    sudo pip install "ansible${ANSIBLE_VERSION_CONSTRAINT}" && \
+    sudo rm -rf ~/.cache/pip && \
+    sudo apt-get clean && sudo apt-get -y autoremove && sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+## rsync
+RUN sudo apt-get -q update && \
+    sudo apt-get install -q -y --no-install-recommends rsync && \
     sudo apt-get clean && sudo apt-get -y autoremove && sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ## Sage
@@ -21,11 +34,13 @@ RUN sudo apt-get -q update && \
     sudo apt-get clean && sudo apt-get -y autoremove && sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Basic smoke test
-RUN echo 'ansible --version' && ansible --version && \
-    echo 'rsync --version' && rsync --version && \
-    echo 'node --version' && node --version && \
+RUN echo 'node --version' && node --version && \
     echo 'npm --version' && npm --version && \
-    echo 'yarn versions' && yarn versions
+    echo 'yarn versions' && yarn versions && \
+    echo 'pip --version' && pip --version && \
+    echo 'pip check' && pip check && \
+    echo 'ansible --version' && ansible --version && \
+    echo 'rsync --version' && rsync --version
 
 # Define default command.
 CMD ["bash"]
