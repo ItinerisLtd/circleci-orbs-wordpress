@@ -29,37 +29,50 @@ jobs:
       - run: echo $DOCKER_PASS | docker login --username $DOCKER_USER --password-stdin
       - run: docker push itinerisltd/tiller-circleci:ansible-<< parameters.ansible_version >>-python-<< parameters.python_version >>node-<< parameters.node_version >>
 
+# Wait for https://discuss.circleci.com/t/workflows-seem-incomplete/13461
+only-master-filter: &only-master-filter
+  filters:
+    branches:
+      only: master
+
 build-docker-workflow: &build-docker-workflow
   jobs:
     - build-percy-anywhere-wp-docker:
+        <<: *only-master-filter
         name: php-7.3-ruby-2.6.1-percy-anywhere-wp
         php_version: '7.3'
         ruby_version: '2.6.1'
     - build-percy-anywhere-wp-docker:
+        <<: *only-master-filter
         name: php-7.2-ruby-2.6.1-percy-anywhere-wp
         php_version: '7.2'
         ruby_version: '2.6.1'
     - build-percy-anywhere-wp-docker:
+        <<: *only-master-filter
         name: php-7.1-ruby-2.6.1-percy-anywhere-wp
         php_version: '7.1'
         ruby_version: '2.6.1'
 
     - build-tiller-circleci-docker:
+        <<: *only-master-filter
         name: ansible-latest-python-3-node-10-tiller-circleci
         ansible_version: 'latest'
         python_version: '3'
         node_version: '10'
     - build-tiller-circleci-docker:
+        <<: *only-master-filter
         name: ansible-2.7-python-3-node-10-tiller-circleci
         ansible_version: '2.7'
         python_version: '3'
         node_version: '10'
     - build-tiller-circleci-docker:
+        <<: *only-master-filter
         name: ansible-latest-python-2-node-10-tiller-circleci
         ansible_version: 'latest'
         python_version: '2'
         node_version: '10'
     - build-tiller-circleci-docker:
+        <<: *only-master-filter
         name: ansible-2.7-python-2-node-10-tiller-circleci
         ansible_version: '2.7'
         python_version: '2'
@@ -70,6 +83,7 @@ workflows:
     <<: *build-docker-workflow
     triggers:
       - schedule:
+          <<: *only-master-filter
           # Every day at 12am UTC
           cron: "0 0 * * *"
           filters:
