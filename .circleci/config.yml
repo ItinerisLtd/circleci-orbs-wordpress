@@ -14,18 +14,16 @@ jobs:
       - run: circleci version
       - run: circleci orb validate << parameters.orb_path >>
 
-  build-percy-anywhere-wp-docker:
+  build-percy-cypress-wp-docker:
     machine: true
     parameters:
       php_version:
         type: string
-      ruby_version:
-        type: string
     steps:
       - checkout
-      - run: docker build --tag itinerisltd/percy-anywhere-wp:php-<< parameters.php_version >>-ruby-<< parameters.ruby_version >> --build-arg PHP_VERSION=<< parameters.php_version >> --build-arg RUBY_VERSION=<< parameters.ruby_version >> src/percy-anywhere-wp
+      - run: docker build --tag itinerisltd/percy-cypress-wp:chrome69-php-<< parameters.php_version >>
       - run: echo $DOCKER_PASS | docker login --username $DOCKER_USER --password-stdin
-      - run: docker push itinerisltd/percy-anywhere-wp:php-<< parameters.php_version >>-ruby-<< parameters.ruby_version >>
+      - run: docker push itinerisltd/percy-cypress-wp:chrome69-php-<< parameters.php_version >>
 
   build-tiller-circleci-docker:
     machine: true
@@ -50,21 +48,14 @@ only-master-filter: &only-master-filter
 
 build-docker-workflow: &build-docker-workflow
   jobs:
-    - build-percy-anywhere-wp-docker:
+    - build-percy-cypress-wp-docker:
         <<: *only-master-filter
-        name: php-7.3-ruby-2.6.1-percy-anywhere-wp
+        name: chrome69-php7.3-percy-cypress-wp
         php_version: '7.3'
-        ruby_version: '2.6.1'
-    - build-percy-anywhere-wp-docker:
+    - build-percy-cypress-wp-docker:
         <<: *only-master-filter
-        name: php-7.2-ruby-2.6.1-percy-anywhere-wp
+        name: chrome69-php7.2-percy-cypress-wp
         php_version: '7.2'
-        ruby_version: '2.6.1'
-    - build-percy-anywhere-wp-docker:
-        <<: *only-master-filter
-        name: php-7.1-ruby-2.6.1-percy-anywhere-wp
-        php_version: '7.1'
-        ruby_version: '2.6.1'
 
     - build-tiller-circleci-docker:
         <<: *only-master-filter
@@ -112,8 +103,8 @@ workflows:
           name: vaildate-composer-orb
           orb_path: 'src/composer/orb.yml'
       - vaildate-orb:
-          name: vaildate-percy-anywhere-wp-orb
-          orb_path: 'src/percy-anywhere-wp/orb.yml'
+          name: vaildate-percy-cypress-wp-orb
+          orb_path: 'src/percy-cypress-wp/orb.yml'
       - vaildate-orb:
           name: vaildate-tiller-circleci-orb
           orb_path: 'src/tiller-circleci/orb.yml'
