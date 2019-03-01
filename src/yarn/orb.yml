@@ -19,11 +19,17 @@ commands:
             - v0-itinerisltd-yarn-cache-{{ arch }}-
 
   save_yarn_cache:
+    parameters:
+      cwd:
+        type: string
+        description: directory path to yarn project
+        default: .
     steps:
       - save_cache:
           key: v0-itinerisltd-yarn-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
           paths:
             - ~/.yarn/cache
+            - << parameters.cwd >>/node_modules
 
   exec:
     description: |
@@ -70,7 +76,8 @@ jobs:
           command: install
           cwd: << parameters.cwd >>
           args: << parameters.install_args >>
-      - save_yarn_cache
+      - save_yarn_cache:
+          cwd: << parameters.cwd >>
 
 executors:
   default:

@@ -1,0 +1,101 @@
+version: 2.1
+
+###########################################################################################################
+# GitHub: https://github.com/ItinerisLtd/circleci-orbs-wordpress/blob/master/src/percy-cypress-wp/orb.yml #
+# CircleCI: https://circleci.com/orbs/registry/orb/itinerisltd/percy-cypress-wp                           #
+###########################################################################################################
+
+description: |
+  Take percy.io snapshots at Bedrock (WordPress) projects via Cypress on Chrome
+  Source Code: https://github.com/ItinerisLtd/circleci-orbs-wordpress/blob/master/src/percy-cypress-wp/orb.yml
+
+orbs:
+  yarn: itinerisltd/yarn@0
+
+jobs:
+  snapshot:
+    parameters:
+      executor:
+        type: executor
+        default: seven_three
+      dot_env:
+        type: string
+        description: .env file that contain non-secret environment-specific variables
+        default: .env.percy
+      wp_migrate_db_url:
+        type: string
+        description: remote site's `site_url`, used in `$ wp migratedb pull`
+        default: '$WP_MIGRATE_DB_URL'
+      wp_migrate_db_secret_key:
+        type: string
+        description: remote site's secret key, used in `$ wp migratedb pull`
+        default: '$WP_MIGRATE_DB_SECRET_KEY'
+      start:
+        type: string
+        default: wp server --docroot=web --allow-root
+        description: server start command to run in the background before running Cypress tests
+      wait_on:
+        type: string
+        default: http://localhost:8080 --timeout 30000
+      command:
+        type: string
+        default: yarn percy exec -- cypress run --config baseUrl=http://localhost:8080
+        description: custom test command to run Cypress tests, which overrides all individual options.
+    executor: << parameters.executor >>
+    working_directory: ~/project
+    steps:
+      - run: node --version
+      - run: yarn --versions
+      - run: php --version
+      - run: wp --info --allow-root
+      - run: which mysql
+
+      - run: cp << parameters.dot_env >> .env
+      - run: wp db reset --yes --skip-packages --skip-themes --skip-plugins --allow-root
+      - run: wp core install --url='http://localhost:8080' --title=Percy --admin_user=percy --admin_email='percy@circleci.test' --skip-email --skip-packages --skip-themes --skip-plugins --allow-root
+
+      # TODO: Allow using other database migration tools
+      - run: wp plugin activate wp-migrate-db-pro wp-migrate-db-pro-cli --skip-packages --skip-themes --skip-plugins --allow-root
+      - run: wp migratedb pull << parameters.wp_migrate_db_url >> << parameters.wp_migrate_db_secret_key >> --allow-root
+      - run: wp core update-db --skip-packages --skip-themes --skip-plugins --allow-root
+      - run: wp rewrite flush --allow-root
+
+      - run:
+          name: Start WordPress server
+          command: <<parameters.start>>
+          background: true
+
+      - yarn/restore_yarn_cache
+      - yarn/exec:
+          command: install
+      - yarn/save_yarn_cache
+
+      - run:
+          name: Wait for WordPress server booted
+          command: npx wait-on <<parameters.wait_on>>
+
+      - run: <<parameters.command>>
+
+executors:
+  seven_three:
+    parameters:
+      web_image:
+        type: string
+        default: 'itinerisltd/percy-cypress-wp:chrome69-php7.3'
+      db_image:
+        type: string
+        default: 'circleci/mariadb:latest-ram'
+    docker:
+        - image: << parameters.web_image >>
+        - image: << parameters.db_image >>
+  seven_two:
+    parameters:
+      web_image:
+        type: string
+        default: 'itinerisltd/percy-cypress-wp:chrome69-php7.2'
+      db_image:
+        type: string
+        default: 'circleci/mariadb:latest-ram'
+    docker:
+        - image: << parameters.web_image >>
+        - image: << parameters.db_image >>
