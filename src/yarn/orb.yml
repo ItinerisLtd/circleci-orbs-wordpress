@@ -11,12 +11,19 @@ description: |
 
 commands:
   restore_yarn_cache:
+    parameters:
+      cwd:
+        type: string
+        description: directory path to yarn project
+        default: .
     steps:
+      - run: mkdir -p << parameters.cwd >>/node_modules
+      - run: chmod -R 777 << parameters.cwd >>/node_modules
       - restore_cache:
           keys:
-            - v0-itinerisltd-yarn-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-
-            - v0-itinerisltd-yarn-cache-{{ arch }}-{{ .Branch }}-
-            - v0-itinerisltd-yarn-cache-{{ arch }}-
+            - v0.2-itinerisltd-yarn-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-
+            - v0.2-itinerisltd-yarn-cache-{{ arch }}-{{ .Branch }}-
+            - v0.2-itinerisltd-yarn-cache-{{ arch }}-
 
   save_yarn_cache:
     parameters:
@@ -26,7 +33,7 @@ commands:
         default: .
     steps:
       - save_cache:
-          key: v0-itinerisltd-yarn-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
+          key: v0.2-itinerisltd-yarn-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
           paths:
             - ~/.yarn/cache
             - << parameters.cwd >>/node_modules
@@ -71,7 +78,8 @@ jobs:
       - run: node --version
       - run: yarn versions
       - checkout
-      - restore_yarn_cache
+      - restore_yarn_cache:
+          cwd: << parameters.cwd >>
       - exec:
           command: install
           cwd: << parameters.cwd >>
