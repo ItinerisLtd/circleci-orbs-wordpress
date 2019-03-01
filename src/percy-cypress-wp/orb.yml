@@ -45,7 +45,7 @@ jobs:
     working_directory: ~/project
     steps:
       - run: node --version
-      - run: yarn --versions
+      - run: yarn versions
       - run: php --version
       - run: wp --info --allow-root
       - run: which mysql
