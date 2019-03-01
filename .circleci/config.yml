@@ -21,7 +21,7 @@ jobs:
         type: string
     steps:
       - checkout
-      - run: docker build --tag itinerisltd/percy-cypress-wp:chrome69-php-<< parameters.php_version >>
+      - run: docker build --tag itinerisltd/percy-cypress-wp:chrome69-php-<< parameters.php_version >> --build-arg PHP_VERSION=<< parameters.php_version >> src/percy-cypress-wp
       - run: echo $DOCKER_PASS | docker login --username $DOCKER_USER --password-stdin
       - run: docker push itinerisltd/percy-cypress-wp:chrome69-php-<< parameters.php_version >>
 
