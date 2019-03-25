@@ -68,6 +68,8 @@ jobs:
       - yarn/restore_yarn_cache
       - yarn/exec:
           command: install
+      - yarn/exec:
+          command: cypress install
       - yarn/save_yarn_cache
 
       - run:
