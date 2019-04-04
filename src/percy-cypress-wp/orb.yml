@@ -58,10 +58,6 @@ jobs:
       - run: wp plugin activate wp-migrate-db-pro wp-migrate-db-pro-cli --skip-packages --skip-themes --skip-plugins --allow-root
       - run: wp migratedb pull << parameters.wp_migrate_db_url >> << parameters.wp_migrate_db_secret_key >> --allow-root
       - run: wp core update-db --skip-packages --skip-themes --skip-plugins --allow-root
-
-      # # TODO: Allow customization
-      - run: wp plugin deactivate password-protected --skip-plugins --skip-themes --allow-root || true
-
       - run: wp rewrite flush --allow-root
 
       - run:
