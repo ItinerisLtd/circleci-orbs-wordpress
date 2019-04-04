@@ -60,7 +60,7 @@ jobs:
       - run: wp core update-db --skip-packages --skip-themes --skip-plugins --allow-root
 
       # # TODO: Allow customization
-      - run: wp plugin deactivate password-protected --skip-plugins --skip-themes || true
+      - run: wp plugin deactivate password-protected --skip-plugins --skip-themes --allow-root || true
 
       - run: wp rewrite flush --allow-root
 
