@@ -41,7 +41,7 @@ commands:
         description: extra arguments (execpt `--working-dir`)
         default: ''
     steps:
-      - run: composer << parameters.command >> --working-dir=<< parameters.working_dir >> << parameters.args >>
+      - run: composer --working-dir=<< parameters.working_dir >> << parameters.args >> << parameters.command >>
 
 jobs:
   install:
