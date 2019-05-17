@@ -18,7 +18,7 @@ RUN if [ "$PYTHON_VERSION" = "2" ]; then export PYTHON_VERSION=''; fi && \
     sudo apt-get install -q -y --no-install-recommends "python${PYTHON_VERSION}-setuptools" "python${PYTHON_VERSION}-yaml" && \
     sudo "easy_install${PYTHON_VERSION}" pip && \
     if [ "$ANSIBLE_VERSION" = "latest" ]; then export ANSIBLE_VERSION_CONSTRAINT=''; fi && \
-    if [ "$ANSIBLE_VERSION" != "latest" ]; then export ANSIBLE_VERSION_CONSTRAINT="=='${ANSIBLE_VERSION}.*'"; fi && \
+    if [ "$ANSIBLE_VERSION" != "latest" ]; then export ANSIBLE_VERSION_CONSTRAINT="==${ANSIBLE_VERSION}"; fi && \
     sudo pip install "ansible${ANSIBLE_VERSION_CONSTRAINT}" && \
     sudo rm -rf ~/.cache/pip && \
     sudo apt-get clean && sudo apt-get -y autoremove && sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
