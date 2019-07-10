@@ -4,7 +4,7 @@
 
 ARG NODE_VERSION=10
 
-FROM "circleci/node:${NODE_VERSION}"
+FROM "circleci/node:${NODE_VERSION}-browsers"
 
 ARG PYTHON_VERSION=2
 ARG ANSIBLE_VERSION=latest
