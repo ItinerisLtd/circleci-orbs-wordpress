@@ -11,51 +11,45 @@ description: |
 
 commands:
   restore_composer_cache:
+    parameters:
+      working-dir: &working-dir
+        type: string
+        description: Working directory to use, path to composer project. Related to ~/project
+        default: .
     steps:
       - restore_cache:
           keys:
-            - v0-itinerisltd-composer-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-
-            - v0-itinerisltd-composer-cache-{{ arch }}-{{ .Branch }}-
-            - v0-itinerisltd-composer-cache-{{ arch }}-
+            - v0.3-itinerisltd-composer-cache-<< parameters.working-dir >>-{{ arch }}-{{ .Branch }}-{{ .Revision }}-
+            - v0.3-itinerisltd-composer-cache-<< parameters.working-dir >>-{{ arch }}-{{ .Branch }}-
+            - v0.3-itinerisltd-composer-cache-<< parameters.working-dir >>-{{ arch }}-
 
   save_composer_cache:
+    parameters:
+      working-dir: *working-dir
     steps:
       - save_cache:
-          key: v0-itinerisltd-composer-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
+          key: v0.3-itinerisltd-composer-cache-<< parameters.working-dir >>-{{ arch }}-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
           paths:
             - ~/.composer/cache
+            - ~/project/<< parameters.working-dir >>/vendor
 
   exec:
     description: |
-        Execute `$ composer xxx` commands at `working_dir`
+        Execute `$ composer --working-dir=<working-dir> xxx`
     parameters:
+      working-dir: *working-dir
       command:
         type: string
-        description: the command to execute
-      working_dir:
-        type: string
-        description: directory path to composer project
-        default: .
-      args:
-        type: string
-        description: extra arguments (execpt `--working-dir`)
-        default: ''
+        description: command to run (including its arguments except `--working-dir`)
     steps:
-      - run: composer --working-dir=<< parameters.working_dir >> << parameters.args >> << parameters.command >>
+      - run: composer --working-dir=<< parameters.working-dir >> << parameters.command >>
 
 jobs:
   install:
     description: |
-      Run `$ composer install` at `working_dir` with caching
+      Run `$ composer install --prefer-dist --no-interaction` at `working-dir` with caching
     parameters:
-      install_args:
-        type: string
-        description: composer install arguments
-        default: --prefer-dist --no-interaction
-      working_dir:
-        type: string
-        description: directory path to composer project
-        default: .
+      working-dir: *working-dir
       executor:
         type: executor
         default: latest
@@ -63,40 +57,34 @@ jobs:
     working_directory: ~/project
     steps:
       - run: php --version
-      - run: sudo composer self-update
       - run: composer --version
       - checkout
-      - restore_composer_cache
+      - restore_composer_cache:
+          working-dir: << parameters.working-dir >>
       - exec:
-          working_dir: << parameters.working_dir >>
-          command: install
-          args: << parameters.install_args >>
-      - save_composer_cache
+          command: install --prefer-dist --no-interaction
+          working-dir: << parameters.working-dir >>
+      - save_composer_cache:
+          working-dir: << parameters.working-dir >>
 
 executors:
   latest:
     docker:
       - image: 'circleci/php:latest'
-  seven:
+  php-7:
     docker:
       - image: 'circleci/php:7'
-  seven_three:
+  php-73:
     docker:
       - image: 'circleci/php:7.3'
-  seven_two:
+  php-72:
     docker:
       - image: 'circleci/php:7.2'
-  seven_one:
-    docker:
-      - image: 'circleci/php:7.1'
-  seven_zero:
-    docker:
-      - image: 'circleci/php:7.0'
 
 examples:
   style-check:
     description: |
-      Execute `$ composer style:check` with PHP 7.2 at `web/app/themes/sage`
+      Execute `$ composer install && composer style:check` with PHP 7.2 at `web/app/themes/sage`
     usage:
       version: 2.1
       orbs:
@@ -106,9 +94,9 @@ examples:
           jobs:
             - composer/install:
                 name: sage-style-check
-                executor: composer/seven_two
-                working_dir: web/app/themes/sage
+                executor: composer/php-72
+                working-dir: web/app/themes/sage
                 post-steps:
                   - composer/exec:
-                      working_dir: web/app/themes/sage
                       command: style:check
+                      working-dir: web/app/themes/sage
