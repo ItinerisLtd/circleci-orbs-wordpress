@@ -11,80 +11,73 @@ description: |
 
 commands:
   restore_yarn_cache:
+    parameters:
+      cwd: &cwd
+        type: string
+        description: Working directory to use, path to yarn project. Related to ~/project
+        default: .
     steps:
       - restore_cache:
           keys:
-            - v0.3-itinerisltd-yarn-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-
-            - v0.3-itinerisltd-yarn-cache-{{ arch }}-{{ .Branch }}-
-            - v0.3-itinerisltd-yarn-cache-{{ arch }}-
+            - v0.4-itinerisltd-yarn-cache-<< parameters.cwd >>-{{ arch }}-{{ .Branch }}-{{ .Revision }}-
+            - v0.4-itinerisltd-yarn-cache-<< parameters.cwd >>-{{ arch }}-{{ .Branch }}-
+            - v0.4-itinerisltd-yarn-cache-<< parameters.cwd >>-{{ arch }}-
 
   save_yarn_cache:
+    parameters:
+      cwd: *cwd
     steps:
       - save_cache:
-          key: v0.3-itinerisltd-yarn-cache-{{ arch }}-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
+          key: v0.4-itinerisltd-yarn-cache-<< parameters.cwd >>-{{ arch }}-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
           paths:
             - ~/.yarn/cache
+            - ~/project/<< parameters.cwd >>/node_modules
 
   exec:
-    description: |
-        Execute `$ yarn xxx` commands at `cwd`
+    description: Execute `$ yarn yarn --cwd=<cwd> <command>`
     parameters:
       command:
         type: string
-        description: command name to run
-      cwd:
-        type: string
-        description: directory path to yarn project
-        default: .
-      args:
-        type: string
-        description: extra arguments (execpt `--cwd`)
-        default: ''
+        description: command to run (including its arguments except --cwd)
+      cwd: *cwd
     steps:
-      - run: yarn --cwd=<< parameters.cwd >> << parameters.args >> << parameters.command >>
+      - run: yarn --cwd=<< parameters.cwd >> << parameters.command >>
 
 jobs:
   install:
-    description: |
-      Run `$ yarn install` at `cwd` with caching
+    description: Run `$ yarn --cwd=<cwd> install --frozen-lockfile` caching
     parameters:
-      install_args:
-        type: string
-        description: yarn install arguments
-        default: --frozen-lockfile
-      cwd:
-        type: string
-        description: directory path to yarn project
-        default: .
+      cwd: *cwd
       executor:
         type: executor
-        default: default
+        default: node-10
     executor: << parameters.executor >>
     working_directory: ~/project
     steps:
       - run: node --version
       - run: yarn versions
       - checkout
-      - restore_yarn_cache
-      - exec:
-          command: install
+      - restore_yarn_cache:
           cwd: << parameters.cwd >>
-          args: << parameters.install_args >>
-      - save_yarn_cache
+      - exec:
+          command: install --frozen-lockfile
+          cwd: << parameters.cwd >>
+      - save_yarn_cache:
+          cwd: << parameters.cwd >>
 
 executors:
-  default:
-    parameters:
-      image:
-        type: string
-        default: 'circleci/node:10'
+  node-10:
     docker:
-      - image: << parameters.image >>
+      - image: circleci/node:10
+
+  node-12:
+    docker:
+      - image: circleci/node:12
 
 examples:
   yarn-build:
     description: |
-      Execute `$ yarn build` with NodeJS 8 at `web/app/themes/sage`
+      Execute `$ yarn --cwd=web/app/themes/sage build:production` on NodeJS 12 with caching after `$ $ yarn --cwd=web/app/themes/sage install --frozen-lockfile`
     usage:
       version: 2.1
       orbs:
@@ -94,9 +87,9 @@ examples:
           jobs:
             - yarn/install:
                 name: yarn-build
-                executor: 'circleci/node:8'
+                executor: yarn/node-12
                 working_dir: web/app/themes/sage
                 post-steps:
                   - yarn/exec:
-                      command: build
+                      command: build:production
                       cwd: web/app/themes/sage
