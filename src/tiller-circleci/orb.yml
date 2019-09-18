@@ -26,6 +26,11 @@ jobs:
         type: string
         description: trellis branch
         default: master
+      role_file:
+        default: "galaxy.yml"
+        description: galaxy role file containing a list of roles to be imported
+        type: enum
+        enum: ["galaxy.yml", "requirements.yml"]
       vault_password:
         type: string
         description: ansible vault password
@@ -54,7 +59,7 @@ jobs:
           command: git clone --verbose --branch << parameters.trellis_branch >> --depth 1 << parameters.trellis_repo >> .
           working_directory: trellis
       - restore_cache:
-          key: v0-itinerisltd-tiller-circleci-ansible-galaxy-cache-{{ checksum "trellis/requirements.yml" }}
+          key: v0-itinerisltd-tiller-circleci-ansible-galaxy-cache-{{ checksum "trellis/<< parameters.role_file >>" }}
       - restore_cache:
           keys:
             - v0-itinerisltd-tiller-circleci-deploy-cache-{{ .Branch }}-{{ .Revision }}-
@@ -66,10 +71,10 @@ jobs:
           working_directory: trellis
       - run:
           name: Install ansible galaxy roles
-          command: ansible-galaxy install -r requirements.yml -vvvv
+          command: ansible-galaxy install -r << parameters.role_file >> -vvvv
           working_directory: trellis
       - save_cache:
-          key: v0-itinerisltd-tiller-circleci-ansible-galaxy-cache-{{ checksum "trellis/requirements.yml" }}
+          key: v0-itinerisltd-tiller-circleci-ansible-galaxy-cache-{{ checksum "trellis/<< parameters.role_file >>" }}
           paths:
             - trellis/vendor
       - save_cache:
