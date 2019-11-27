@@ -90,7 +90,7 @@ jobs:
 executors:
   default:
     docker:
-      - image: 'itinerisltd/tiller-circleci:ansible-2.7-python-2-node-10'
+      - image: 'itinerisltd/tiller-circleci:ansible-2.8-python-2-node-10'
 
 examples:
   hold-deploy:
