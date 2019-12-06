@@ -28,7 +28,7 @@ jobs:
     steps:
       - checkout
       - run: docker build --tag itinerisltd/percy-cypress-wp:chrome69-php-<< parameters.php_version >> --build-arg PHP_VERSION=<< parameters.php_version >> src/percy-cypress-wp
-      - run: docker login --username << parameters.docker_user >> --password << parameters.docker_pass >>
+      - run: echo << parameters.docker_pass >> | docker login --username << parameters.docker_user >> --password-stdin
       - run: docker push itinerisltd/percy-cypress-wp:chrome69-php-<< parameters.php_version >>
 
   build-tiller-circleci-docker:
@@ -47,7 +47,7 @@ jobs:
     steps:
       - checkout
       - run: docker build --tag itinerisltd/tiller-circleci:ansible-<< parameters.ansible_version >>-node-<< parameters.node_version >> --build-arg ANSIBLE_VERSION=<< parameters.ansible_version >> --build-arg NODE_VERSION=<< parameters.node_version >> src/tiller-circleci
-      - run: docker login --username << parameters.docker_user >> --password << parameters.docker_pass >>
+      - run: echo << parameters.docker_pass >> | docker login --username << parameters.docker_user >> --password-stdin
       - run: docker push itinerisltd/tiller-circleci:ansible-<< parameters.ansible_version >>-node-<< parameters.node_version >>
 
 # Wait for https://discuss.circleci.com/t/workflows-seem-incomplete/13461
