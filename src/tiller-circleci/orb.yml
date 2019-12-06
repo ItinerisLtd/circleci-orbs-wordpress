@@ -18,17 +18,17 @@ jobs:
     parameters:
       known_hosts:
         type: string
-        description: hosts you exptecetd to connect include VCS and your remote servers
+        description: hosts you expected to connect include VCS and your remote servers
       trellis_repo:
         type: string
-        description: trellis repository
+        description: trellis repository. Must be a SSH URL.
       trellis_branch:
         type: string
-        description: trellis branch
+        description: trellis branch, commit hash or tag
         default: master
       role_file:
         default: "galaxy.yml"
-        description: galaxy role file containing a list of roles to be imported
+        description: galaxy role file name
         type: enum
         enum: ["galaxy.yml", "requirements.yml"]
       vault_password:
@@ -37,14 +37,14 @@ jobs:
         default: VAULT_PASSWORD
       vault_password_file:
         type: string
-        description: ansible vault password file to use. Must be the same one in ansible.cfg(if applicable)
+        description: ansible vault password file to use. Must be the same one in ansible.cfg
         default: .vault_pass
       site_env:
         type: string
-        description: the environment to deploy to (staging, production, etc)
+        description: "the environment to deploy to, e.g: staging, production, etc"
       site_name:
         type: string
-        description: the WordPress site to deploy (name defined in wordpress_sites)
+        description: "the WordPress site to deploy, i.e: name defined in wordpress_sites"
       executor:
         type: executor
         default: default
