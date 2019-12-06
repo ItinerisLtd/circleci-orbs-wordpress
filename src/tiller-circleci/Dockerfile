@@ -6,17 +6,15 @@ ARG NODE_VERSION=10
 
 FROM "circleci/node:${NODE_VERSION}-browsers"
 
-ARG PYTHON_VERSION=2
 ARG ANSIBLE_VERSION=latest
 
 ARG DEBIAN_FRONTEND=noninteractive
 WORKDIR /home/circleci
 
 ## Python & Ansible
-RUN if [ "$PYTHON_VERSION" = "2" ]; then export PYTHON_VERSION=''; fi && \
-    sudo apt-get -q update && \
-    sudo apt-get install -q -y --no-install-recommends "python${PYTHON_VERSION}-setuptools" "python${PYTHON_VERSION}-yaml" && \
-    sudo "easy_install${PYTHON_VERSION}" pip && \
+RUN sudo apt-get -q update && \
+    sudo apt-get install -q -y --no-install-recommends "python3-setuptools" "python3-yaml" && \
+    sudo "easy_install3" pip && \
     if [ "$ANSIBLE_VERSION" = "latest" ]; then export ANSIBLE_VERSION_CONSTRAINT=''; fi && \
     if [ "$ANSIBLE_VERSION" != "latest" ]; then export ANSIBLE_VERSION_CONSTRAINT="==${ANSIBLE_VERSION}"; fi && \
     sudo pip install "ansible${ANSIBLE_VERSION_CONSTRAINT}" && \
