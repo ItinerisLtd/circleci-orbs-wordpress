@@ -75,7 +75,7 @@ jobs:
             - v1-itinerisltd-tiller-circleci-deploy-cache-
       - run:
           name: Set ansible vault Password
-          command: echo << parameters.vault_password >> > << parameters.vault_password_file >>
+          command: echo ${<< parameters.vault_password >>} > << parameters.vault_password_file >>
           working_directory: trellis
       - run:
           name: Install ansible galaxy roles
