@@ -32,9 +32,9 @@ jobs:
         type: enum
         enum: ["galaxy.yml", "requirements.yml"]
       vault_password:
-        type: string
+        type: env_var_name
         description: ansible vault password
-        default: '$VAULT_PASSWORD'
+        default: VAULT_PASSWORD
       vault_password_file:
         type: string
         description: ansible vault password file to use. Must be the same one in ansible.cfg(if applicable)
