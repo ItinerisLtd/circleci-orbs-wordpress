@@ -74,6 +74,9 @@ executors:
   php-7:
     docker:
       - image: 'circleci/php:7'
+  php-74:
+    docker:
+      - image: 'circleci/php:7.4'
   php-73:
     docker:
       - image: 'circleci/php:7.3'
@@ -84,7 +87,7 @@ executors:
 examples:
   style-check:
     description: |
-      Execute `$ composer install && composer style:check` with PHP 7.2 at `web/app/themes/sage`
+      Execute `$ composer install && composer style:check` with PHP 7.3 at `web/app/themes/sage`
     usage:
       version: 2.1
       orbs:
@@ -94,7 +97,7 @@ examples:
           jobs:
             - composer/install:
                 name: sage-style-check
-                executor: composer/php-72
+                executor: composer/php-73
                 working-dir: web/app/themes/sage
                 post-steps:
                   - composer/exec:
