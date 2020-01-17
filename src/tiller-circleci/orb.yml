@@ -9,16 +9,34 @@ description: |
   Deploy Trellis, Bedrock and Sage(optional) via CircleCI.
   Source Code: https://github.com/ItinerisLtd/circleci-orbs-wordpress/blob/master/src/tiller-circleci/orb.yml
 
-jobs:
-  deploy:
-    description: |
-      Deploy Trellis, Bedrock and Sage(optional) via CircleCI
-      Expecting Trellis and Bedrock to be 2 separate repositories https://github.com/roots/trellis/issues/883#issuecomment-329052189
-      Expecting build steps do not require local Bedrock source code https://github.com/roots/trellis/pull/997 OR https://github.com/roots/trellis/pull/1030
-    parameters:
+commands:
+  print_versions:
+    description: Print dependency versions
+    steps:
+      - run: node --version
+      - run: npm --version
+      - run: yarn versions
+      - run: python3 --version
+      - run: pip3 --version
+      - run: pip3 check
+      - run: virtualenv --version
+      - run: rsync --version
+      - run: trellis --version
+
+  add_ssh_known_hosts:
+    description: Add SSH known hosts
+    parameters: &add_ssh_known_hosts_parameters
       known_hosts:
         type: string
         description: hosts you expected to connect include VCS and your remote servers
+    steps:
+      - run: mkdir ~/.ssh
+      - run: touch ~/.ssh/known_hosts
+      - run: ssh-keyscan -H << parameters.known_hosts >> >> ~/.ssh/known_hosts
+
+  prepare_and_deploy:
+    description: Prepare Trellis repo and deploy
+    parameters: &prepare_and_deploy_parameters
       trellis_repo:
         type: string
         description: trellis repository. Must be a SSH URL.
@@ -26,11 +44,6 @@ jobs:
         type: string
         description: trellis branch, commit hash or tag
         default: master
-      role_file:
-        default: "galaxy.yml"
-        description: galaxy role file name
-        type: enum
-        enum: ["galaxy.yml", "requirements.yml"]
       vault_password:
         type: env_var_name
         description: ansible vault password
@@ -48,110 +61,190 @@ jobs:
       executor:
         type: executor
         default: default
-    executor: << parameters.executor >>
-    working_directory: ~/project
     steps:
-      - run: node --version
-      - run: npm --version
-      - run: yarn versions
-      - run: pip --version
-      - run: pip check
-      - run: ansible --version
-      - run: rsync --version
-
-      - run: mkdir ~/.ssh
-      - run: touch ~/.ssh/known_hosts
-      - run: ssh-keyscan -H << parameters.known_hosts >> >> ~/.ssh/known_hosts
       - run:
           name: Clone Trellis Repo
           command: git clone --verbose --branch << parameters.trellis_branch >> --depth 1 << parameters.trellis_repo >> .
           working_directory: trellis
       - restore_cache:
-          key: v1-itinerisltd-tiller-circleci-ansible-galaxy-cache-{{ checksum "trellis/<< parameters.role_file >>" }}
+          key: v3-itinerisltd-tiller-circleci-ansible-galaxy-cache-{{ checksum "trellis/galaxy.yml" }}
       - restore_cache:
           keys:
-            - v1-itinerisltd-tiller-circleci-deploy-cache-{{ .Branch }}-{{ .Revision }}-
-            - v1-itinerisltd-tiller-circleci-deploy-cache-{{ .Branch }}-
-            - v1-itinerisltd-tiller-circleci-deploy-cache-
+            - v3-itinerisltd-tiller-circleci-deploy-cache-{{ .Branch }}-{{ .Revision }}-
+            - v3-itinerisltd-tiller-circleci-deploy-cache-{{ .Branch }}-
+            - v3-itinerisltd-tiller-circleci-deploy-cache-
       - run:
           name: Set ansible vault Password
           command: echo ${<< parameters.vault_password >>} > << parameters.vault_password_file >>
           working_directory: trellis
       - run:
+          command: trellis init
+          working_directory: trellis
+      - run:
+          command: trellis exec ansible --version
+          working_directory: trellis
+      - run:
           name: Install ansible galaxy roles
-          command: ansible-galaxy install -r << parameters.role_file >> -vvvv
+          command: trellis galaxy install
           working_directory: trellis
       - save_cache:
-          key: v1-itinerisltd-tiller-circleci-ansible-galaxy-cache-{{ checksum "trellis/<< parameters.role_file >>" }}
+          key: v3-itinerisltd-tiller-circleci-ansible-galaxy-cache-{{ checksum "trellis/galaxy.yml" }}
           paths:
             - trellis/vendor
       - save_cache:
-          key: v1-itinerisltd-tiller-circleci-deploy-cache-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
+          key: v3-itinerisltd-tiller-circleci-deploy-cache-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
           paths:
             - /tmp/trellis
-            - /usr/local/share/.cache/yarn/v1
-            - ~/.composer/cache
+            - /home/circleci/.cache
+            - trellis/.trellis
       - deploy:
-          command: ansible-playbook --vault-id << parameters.vault_password_file >> deploy.yml -e env=<< parameters.site_env >> -e site=<< parameters.site_name >> -e site_version=$CIRCLE_SHA1 -vvvv
+          # TODO: Make verbose & accept extra variables.
+          command: trellis deploy << parameters.site_env >> << parameters.site_name >>
           working_directory: trellis
+
+  twoohoh:
+    description: Check URL HTTP status codes are 200 okay with `npx @itinerisltd/twoohoh`
+    parameters: &twoohoh_parameters
+      urls:
+        type: string
+        description: list of URLs, separated by spaces
+    steps:
+      - run: npx @itinerisltd/twoohoh --version
+      - run: npx @itinerisltd/twoohoh << parameters.urls >>
+
+  rollback_if_twoohoh_fail:
+    description: Rollback a deploy via Trellis if URL HTTP status codes are not all 200 okay
+    parameters: &rollback_if_twoohoh_fail
+      <<: *twoohoh_parameters
+      site_env:
+        type: string
+        description: "the environment to deploy to, e.g: staging, production, etc"
+      site_name:
+        type: string
+        description: "the WordPress site to deploy, i.e: name defined in wordpress_sites"
+    steps:
+      - run: npx @itinerisltd/twoohoh --version
+      # TODO: Rollback to specific `--release`
+      - deploy:
+          command: (npx @itinerisltd/twoohoh << parameters.urls >>)|| ((trellis rollback << parameters.site_env >> << parameters.site_name >>) && false)
+          working_directory: trellis
+
+prepare_and_deploy_step_parameters: &prepare_and_deploy_step_parameters
+  trellis_repo: << parameters.trellis_repo >>
+  trellis_branch: << parameters.trellis_branch >>
+  vault_password: << parameters.vault_password >>
+  vault_password_file: << parameters.vault_password_file >>
+  site_env: << parameters.site_env >>
+  site_name: << parameters.site_name >>
+
+jobs:
+  deploy:
+    description: |
+      Deploy Trellis, Bedrock and Sage(optional) via CircleCI
+      Expecting Trellis and Bedrock to be 2 separate repositories https://github.com/roots/trellis/issues/883#issuecomment-329052189
+      Expecting build steps do not require local Bedrock source code https://github.com/roots/trellis/pull/997 OR https://github.com/roots/trellis/pull/1030
+    parameters:
+      <<: *add_ssh_known_hosts_parameters
+      <<: *prepare_and_deploy_parameters
+    executor: << parameters.executor >>
+    steps:
+      - print_versions
+      - add_ssh_known_hosts:
+          known_hosts: << parameters.known_hosts >>
+      - prepare_and_deploy:
+          <<: *prepare_and_deploy_step_parameters
+
+  deploy_with_auto_rollback:
+    description: |
+      Deploy Trellis, Bedrock and Sage(optional) via CircleCI
+      Expecting Trellis and Bedrock to be 2 separate repositories https://github.com/roots/trellis/issues/883#issuecomment-329052189
+      Expecting build steps do not require local Bedrock source code https://github.com/roots/trellis/pull/997 OR https://github.com/roots/trellis/pull/1030
+      Check url status codes before and after deploy
+      Skip deploy or auto-rollback if urls are not 200 okay
+      1. Check urls are all 200 okay
+      2. if not, quit
+      3. `$ trellis deploy production example.com`
+      4. Check urls are all 200 okay again
+      5. If not, `$ trellis rollback production example.com`
+    parameters:
+      <<: *twoohoh_parameters
+      <<: *add_ssh_known_hosts_parameters
+      <<: *prepare_and_deploy_parameters
+      <<: *rollback_if_twoohoh_fail
+    executor: << parameters.executor >>
+    steps:
+      - print_versions
+      - twoohoh:
+          urls: << parameters.urls >>
+      - add_ssh_known_hosts:
+          known_hosts: << parameters.known_hosts >>
+      - prepare_and_deploy:
+          <<: *prepare_and_deploy_step_parameters
+      - rollback_if_twoohoh_fail:
+          urls: << parameters.urls >>
+          site_env: << parameters.site_env >>
+          site_name: << parameters.site_name >>
 
 executors:
   default:
     docker:
-      - image: 'itinerisltd/tiller-circleci:ansible-2.8-node-10'
-  ansible-29:
-    docker:
-      - image: 'itinerisltd/tiller-circleci:ansible-2.9-node-10'
-  ansible-28:
-    docker:
-      - image: 'itinerisltd/tiller-circleci:ansible-2.8-node-10'
-  ansible-27:
-    docker:
-      - image: 'itinerisltd/tiller-circleci:ansible-2.7-node-10'
+      - image: 'itinerisltd/tiller-circleci:node-10'
 
 examples:
   hold-deploy:
     description: |
-      Deploy staging and production environments after manual approval.
+      Deploy to staging on push
+      Deploy to production after manual approval
+      Deploy with auto-rollback to production at 06:00 UTC daily
     usage:
       version: 2.1
 
       orbs:
-        tiller-circleci: itinerisltd/tiller-circleci@0.5
+        tiller-circleci: itinerisltd/tiller-circleci@0.6
+
+      deploy-config: &deploy-config
+        known_hosts: 'github.com, 123.123.123.123'
+        trellis_repo: 'git@github.com:ItinerisLtd/my-trellis-repo.git'
+        site_name: itineris
+
+      critical_urls: &critical_urls 'https://itineris.co.uk/ https://itineris.co.uk/wp-json/'
 
       workflows:
         deploy:
           jobs:
-            - hold: # <<< A job that will require manual approval in the CircleCI web application.
-                type: approval
-                filters:
-                  branches:
-                    only:
-                      - staging
-                      - production
             - tiller-circleci/deploy:
                 name: deploy-staging
-                requires:
-                  - hold
-                executor: tiller-circleci/ansible-27
-                known_hosts: github.com, 123.123.123.123
-                trellis_repo: git@github.com:my-name/my-trellis.git
+                <<: *deploy-config
                 site_env: staging
-                site_name: my.example.com
                 filters:
                   branches:
                     only: staging
-            - tiller-circleci/deploy:
-                name: deploy-production-full-configuration
-                requires:
-                  - hold
-                known_hosts: github.com, 123.123.123.123
-                trellis_repo: git@github.com:my-name/my-trellis.git
-                trellis_branch: my-branch
-                vault_password: '$YOU_SHOULD_SET_VAULT_PASSWORD_VIA_ENVIRONMENT_VARIABLE'
-                vault_password_file: .my_vault_pass
-                site_env: production
-                site_name: my.example.com
+
+        deploy-production-with-manual-approval:
+          jobs:
+            - hold:
+                type: approval
                 filters:
                   branches:
-                    only: production
+                    only: master
+            - tiller-circleci/deploy:
+                <<: *deploy-config
+                site_env: production
+                requires:
+                  - hold
+                filters:
+                  branches:
+                    only: master
+
+        deploy-production-cron:
+          triggers:
+            - schedule:
+                cron: "0 6 * * *"
+                filters:
+                  branches:
+                    only: master
+          jobs:
+            - tiller-circleci/deploy_with_auto_rollback:
+                <<: *deploy-config
+                site_env: production
+                urls: *critical_urls

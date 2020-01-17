@@ -36,8 +36,6 @@ jobs:
     parameters:
       node_version:
         type: string
-      ansible_version:
-        type: string
       docker_user:
         type: env_var_name
         default: DOCKER_USER
@@ -46,9 +44,9 @@ jobs:
         default: DOCKER_PASS
     steps:
       - checkout
-      - run: docker build --tag itinerisltd/tiller-circleci:ansible-<< parameters.ansible_version >>-node-<< parameters.node_version >> --build-arg ANSIBLE_VERSION=<< parameters.ansible_version >> --build-arg NODE_VERSION=<< parameters.node_version >> src/tiller-circleci
+      - run: docker build --tag itinerisltd/tiller-circleci:node-<< parameters.node_version >> --build-arg NODE_VERSION=<< parameters.node_version >> src/tiller-circleci
       - run: echo ${<< parameters.docker_pass >>} | docker login --username ${<< parameters.docker_user >>} --password-stdin
-      - run: docker push itinerisltd/tiller-circleci:ansible-<< parameters.ansible_version >>-node-<< parameters.node_version >>
+      - run: docker push itinerisltd/tiller-circleci:node-<< parameters.node_version >>
 
 # Wait for https://discuss.circleci.com/t/workflows-seem-incomplete/13461
 only-master-filter: &only-master-filter
@@ -69,24 +67,12 @@ build-docker-workflow: &build-docker-workflow
 
     - build-tiller-circleci-docker:
         <<: *only-master-filter
-        name: ansible-latest-node-10-tiller-circleci
-        ansible_version: 'latest'
+        name: node-10-tiller-circleci
         node_version: '10'
     - build-tiller-circleci-docker:
         <<: *only-master-filter
-        name: ansible-2.9-node-10-tiller-circleci
-        ansible_version: '2.9'
-        node_version: '10'
-    - build-tiller-circleci-docker:
-        <<: *only-master-filter
-        name: ansible-2.8-node-10-tiller-circleci
-        ansible_version: '2.8'
-        node_version: '10'
-    - build-tiller-circleci-docker:
-        <<: *only-master-filter
-        name: ansible-2.7-node-10-tiller-circleci
-        ansible_version: '2.7'
-        node_version: '10'
+        name: node-12-tiller-circleci
+        node_version: '12'
 
 workflows:
   build-docker-nightly:
@@ -94,8 +80,8 @@ workflows:
     triggers:
       - schedule:
           <<: *only-master-filter
-          # Every day at 12am UTC
-          cron: "0 0 * * *"
+          # Every day at 0600 UTC
+          cron: "0 6 * * *"
           filters:
             branches:
               only: master
