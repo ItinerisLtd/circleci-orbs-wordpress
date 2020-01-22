@@ -14,23 +14,6 @@ jobs:
       - run: circleci version
       - run: circleci orb validate << parameters.orb_path >>
 
-  build-percy-cypress-wp-docker:
-    machine: true
-    parameters:
-      php_version:
-        type: string
-      docker_user:
-        type: env_var_name
-        default: DOCKER_USER
-      docker_pass:
-        type: env_var_name
-        default: DOCKER_PASS
-    steps:
-      - checkout
-      - run: docker build --tag itinerisltd/percy-cypress-wp:chrome69-php-<< parameters.php_version >> --build-arg PHP_VERSION=<< parameters.php_version >> src/percy-cypress-wp
-      - run: echo ${<< parameters.docker_pass >>} | docker login --username ${<< parameters.docker_user >>} --password-stdin
-      - run: docker push itinerisltd/percy-cypress-wp:chrome69-php-<< parameters.php_version >>
-
   build-tiller-circleci-docker:
     machine: true
     parameters:
@@ -56,15 +39,6 @@ only-master-filter: &only-master-filter
 
 build-docker-workflow: &build-docker-workflow
   jobs:
-    - build-percy-cypress-wp-docker:
-        <<: *only-master-filter
-        name: chrome69-php7.3-percy-cypress-wp
-        php_version: '7.3'
-    - build-percy-cypress-wp-docker:
-        <<: *only-master-filter
-        name: chrome69-php7.2-percy-cypress-wp
-        php_version: '7.2'
-
     - build-tiller-circleci-docker:
         <<: *only-master-filter
         name: node-10-tiller-circleci
@@ -94,9 +68,6 @@ workflows:
       - vaildate-orb:
           name: vaildate-composer-orb
           orb_path: 'src/composer/orb.yml'
-      - vaildate-orb:
-          name: vaildate-percy-cypress-wp-orb
-          orb_path: 'src/percy-cypress-wp/orb.yml'
       - vaildate-orb:
           name: vaildate-tiller-circleci-orb
           orb_path: 'src/tiller-circleci/orb.yml'
