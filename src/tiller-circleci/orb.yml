@@ -42,7 +42,7 @@ commands:
         description: trellis repository. Must be a SSH URL.
       trellis_subtree_path:
         type: string
-        description: "trellis subtree_path. Must starts and ends with a slash, e.g: /trellis/. Use / if Trellis is not located in a subtree_path."
+        description: "trellis subtree_path. Must starts and ends with slashes, e.g: /trellis/. Use / if Trellis is not located in a subdirectory."
         default: /
       trellis_branch:
         type: string
@@ -124,7 +124,7 @@ commands:
       <<: *twoohoh_parameters
       trellis_subtree_path:
         type: string
-        description: "trellis subtree_path. Must starts and ends with a slash, e.g: /trellis/. Use / if Trellis is not located in a subtree_path."
+        description: "trellis subtree_path. Must starts and ends with slashes, e.g: /trellis/. Use / if Trellis is not located in a subdirectory."
         default: /
       site_env:
         type: string
