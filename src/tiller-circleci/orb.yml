@@ -80,7 +80,7 @@ commands:
           command: echo ${<< parameters.vault_password >>} > << parameters.vault_password_file >>
           working_directory: trellis-repo<< parameters.trellis_subtree_path >>
       - run:
-          command: trellis init
+          command: trellis init && trellis exec pip install --upgrade --upgrade-strategy eager -r requirements.txt
           working_directory: trellis-repo<< parameters.trellis_subtree_path >>
       - run:
           command: trellis exec ansible --version
