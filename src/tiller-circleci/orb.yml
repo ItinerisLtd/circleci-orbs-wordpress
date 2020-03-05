@@ -72,10 +72,6 @@ commands:
           working_directory: trellis-repo
       - restore_cache:
           keys:
-            - v4-itinerisltd-tiller-circleci-ansible-galaxy-cache-{{ checksum "trellis-repo<< parameters.trellis_subtree_path >>galaxy.yml" }}
-            - v4-itinerisltd-tiller-circleci-ansible-galaxy-cache-
-      - restore_cache:
-          keys:
             - v4-itinerisltd-tiller-circleci-deploy-cache-{{ .Branch }}-{{ .Revision }}-
             - v4-itinerisltd-tiller-circleci-deploy-cache-{{ .Branch }}-
             - v4-itinerisltd-tiller-circleci-deploy-cache-
@@ -94,15 +90,12 @@ commands:
           command: trellis galaxy install
           working_directory: trellis-repo<< parameters.trellis_subtree_path >>
       - save_cache:
-          key: v4-itinerisltd-tiller-circleci-ansible-galaxy-cache-{{ checksum "trellis-repo<< parameters.trellis_subtree_path >>galaxy.yml" }}
-          paths:
-            - trellis-repo<< parameters.trellis_subtree_path >>/vendor
-      - save_cache:
           key: v4-itinerisltd-tiller-circleci-deploy-cache-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
           paths:
             - /tmp/trellis
             - /home/circleci/.cache
             - trellis-repo<< parameters.trellis_subtree_path >>.trellis
+            - trellis-repo<< parameters.trellis_subtree_path >>vendor
       - deploy:
           # TODO: Make verbose & accept extra variables.
           command: trellis deploy << parameters.site_env >> << parameters.site_name >>
