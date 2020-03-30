@@ -34,9 +34,9 @@ commands:
       - run: touch ~/.ssh/known_hosts
       - run: ssh-keyscan -H << parameters.known_hosts >> >> ~/.ssh/known_hosts
 
-  prepare_and_deploy:
-    description: Prepare Trellis repo and deploy
-    parameters: &prepare_and_deploy_parameters
+  prepare:
+    description: Prepare Trellis repo
+    parameters: &prepare_parameters
       trellis_repo:
         type: string
         description: trellis repository. Must be a SSH URL.
@@ -52,12 +52,6 @@ commands:
         type: string
         description: ansible vault password file to use. Must be the same one in ansible.cfg
         default: .vault_pass
-      site_env:
-        type: string
-        description: "the environment to deploy to, e.g: staging, production, etc"
-      site_name:
-        type: string
-        description: "the WordPress site to deploy, i.e: name defined in wordpress_sites"
       executor:
         type: executor
         default: default
@@ -66,8 +60,6 @@ commands:
           name: Clone Trellis Repo
           command: git clone --verbose --branch << parameters.trellis_branch >> --depth 1 << parameters.trellis_repo >> .
           working_directory: trellis
-      - restore_cache:
-          key: v3-itinerisltd-tiller-circleci-ansible-galaxy-cache-{{ checksum "trellis/galaxy.yml" }}
       - restore_cache:
           keys:
             - v3-itinerisltd-tiller-circleci-deploy-cache-{{ .Branch }}-{{ .Revision }}-
@@ -88,15 +80,22 @@ commands:
           command: trellis galaxy install
           working_directory: trellis
       - save_cache:
-          key: v3-itinerisltd-tiller-circleci-ansible-galaxy-cache-{{ checksum "trellis/galaxy.yml" }}
-          paths:
-            - trellis/vendor
-      - save_cache:
           key: v3-itinerisltd-tiller-circleci-deploy-cache-{{ .Branch }}-{{ .Revision }}-{{ epoch }}
           paths:
             - /tmp/trellis
             - /home/circleci/.cache
             - trellis/.trellis
+
+  deploy_trellis:
+    description: Deploy Trellis
+    parameters: &deploy_trellis_parameters
+      site_env:
+        type: string
+        description: "the environment to deploy to, e.g: staging, production, etc"
+      site_name:
+        type: string
+        description: "the WordPress site to deploy, i.e: name defined in wordpress_sites"
+    steps:
       - deploy:
           # TODO: Make verbose & accept extra variables.
           command: trellis deploy << parameters.site_env >> << parameters.site_name >>
@@ -116,12 +115,7 @@ commands:
     description: Rollback a deploy via Trellis if URL HTTP status codes are not all 200 okay
     parameters: &rollback_if_twoohoh_fail
       <<: *twoohoh_parameters
-      site_env:
-        type: string
-        description: "the environment to deploy to, e.g: staging, production, etc"
-      site_name:
-        type: string
-        description: "the WordPress site to deploy, i.e: name defined in wordpress_sites"
+      <<: *deploy_trellis_parameters
     steps:
       - run: npx @itinerisltd/twoohoh --version
       # TODO: Rollback to specific `--release`
@@ -130,11 +124,13 @@ commands:
           working_directory: trellis
           when: always
 
-prepare_and_deploy_step_parameters: &prepare_and_deploy_step_parameters
+prepare_step_parameters: &prepare_step_parameters
   trellis_repo: << parameters.trellis_repo >>
   trellis_branch: << parameters.trellis_branch >>
   vault_password: << parameters.vault_password >>
   vault_password_file: << parameters.vault_password_file >>
+
+deploy_trellis_step_parameters: &deploy_trellis_step_parameters
   site_env: << parameters.site_env >>
   site_name: << parameters.site_name >>
 
@@ -146,14 +142,17 @@ jobs:
       Expecting build steps do not require local Bedrock source code https://github.com/roots/trellis/pull/997 OR https://github.com/roots/trellis/pull/1030
     parameters:
       <<: *add_ssh_known_hosts_parameters
-      <<: *prepare_and_deploy_parameters
+      <<: *prepare_parameters
+      <<: *deploy_trellis_parameters
     executor: << parameters.executor >>
     steps:
       - print_versions
       - add_ssh_known_hosts:
           known_hosts: << parameters.known_hosts >>
-      - prepare_and_deploy:
-          <<: *prepare_and_deploy_step_parameters
+      - prepare:
+          <<: *prepare_step_parameters
+      - deploy_trellis:
+          <<: *deploy_trellis_step_parameters
 
   deploy_with_auto_rollback:
     description: |
@@ -170,7 +169,8 @@ jobs:
     parameters:
       <<: *twoohoh_parameters
       <<: *add_ssh_known_hosts_parameters
-      <<: *prepare_and_deploy_parameters
+      <<: *prepare_parameters
+      <<: *deploy_trellis_parameters
       <<: *rollback_if_twoohoh_fail
     executor: << parameters.executor >>
     steps:
@@ -179,12 +179,13 @@ jobs:
           urls: << parameters.urls >>
       - add_ssh_known_hosts:
           known_hosts: << parameters.known_hosts >>
-      - prepare_and_deploy:
-          <<: *prepare_and_deploy_step_parameters
+      - prepare:
+          <<: *prepare_step_parameters
+      - deploy_trellis:
+          <<: *deploy_trellis_step_parameters
       - rollback_if_twoohoh_fail:
+          <<: *deploy_trellis_step_parameters
           urls: << parameters.urls >>
-          site_env: << parameters.site_env >>
-          site_name: << parameters.site_name >>
 
 executors:
   default:
