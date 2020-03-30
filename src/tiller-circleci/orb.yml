@@ -101,6 +101,17 @@ commands:
           command: trellis deploy << parameters.site_env >> << parameters.site_name >>
           working_directory: trellis
 
+  trellis_exec:
+    description: Run ansible exec command
+    parameters: &trellis_exec_parameters
+      command:
+        type: string
+        description: "the command"
+    steps:
+      - deploy:
+          command: trellis exec << parameters.command >>
+          working_directory: trellis
+
   twoohoh:
     description: Check URL HTTP status codes are 200 okay with `npx @itinerisltd/twoohoh`
     parameters: &twoohoh_parameters
@@ -134,6 +145,9 @@ deploy_trellis_step_parameters: &deploy_trellis_step_parameters
   site_env: << parameters.site_env >>
   site_name: << parameters.site_name >>
 
+trellis_exec_step_parameters: &trellis_exec_step_parameters
+  command: << parameters.command >>
+
 jobs:
   deploy:
     description: |
@@ -153,6 +167,21 @@ jobs:
           <<: *prepare_step_parameters
       - deploy_trellis:
           <<: *deploy_trellis_step_parameters
+
+  trellis_exec:
+    parameters:
+      <<: *add_ssh_known_hosts_parameters
+      <<: *prepare_parameters
+      <<: *trellis_exec_parameters
+    executor: << parameters.executor >>
+    steps:
+      - print_versions
+      - add_ssh_known_hosts:
+          known_hosts: << parameters.known_hosts >>
+      - prepare:
+          <<: *prepare_step_parameters
+      - trellis_exec:
+          <<: *trellis_exec_step_parameters
 
   deploy_with_auto_rollback:
     description: |
