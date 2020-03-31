@@ -35,7 +35,7 @@ commands:
       - run: ssh-keyscan -H << parameters.known_hosts >> >> ~/.ssh/known_hosts
 
   prepare:
-    description: Prepare Trellis repo
+    description: "Prepare Trellis repo: Clone the Trellis repo, set up ansible vault password and install ansible galaxy roles"
     parameters: &prepare_parameters
       trellis_repo:
         type: string
@@ -52,12 +52,9 @@ commands:
         type: string
         description: ansible vault password file to use. Must be the same one in ansible.cfg
         default: .vault_pass
-      executor:
-        type: executor
-        default: default
     steps:
       - run:
-          name: Clone Trellis Repo
+          name: Clone Trellis repo
           command: git clone --verbose --branch << parameters.trellis_branch >> --depth 1 << parameters.trellis_repo >> .
           working_directory: trellis
       - restore_cache:
@@ -66,7 +63,7 @@ commands:
             - v3-itinerisltd-tiller-circleci-deploy-cache-{{ .Branch }}-
             - v3-itinerisltd-tiller-circleci-deploy-cache-
       - run:
-          name: Set ansible vault Password
+          name: Set ansible vault password
           command: echo ${<< parameters.vault_password >>} > << parameters.vault_password_file >>
           working_directory: trellis
       - run:
@@ -102,38 +99,15 @@ commands:
           working_directory: trellis
 
   trellis_exec:
-    description: Run ansible exec command
+    description: Run `trellis exec` command
     parameters: &trellis_exec_parameters
       command:
         type: string
-        description: "the command"
+        description: the `trellis exec` command arguments
     steps:
       - deploy:
           command: trellis exec << parameters.command >>
           working_directory: trellis
-
-  twoohoh:
-    description: Check URL HTTP status codes are 200 okay with `npx @itinerisltd/twoohoh`
-    parameters: &twoohoh_parameters
-      urls:
-        type: string
-        description: list of URLs, separated by spaces
-    steps:
-      - run: npx @itinerisltd/twoohoh --version
-      - run: npx @itinerisltd/twoohoh << parameters.urls >>
-
-  rollback_if_twoohoh_fail:
-    description: Rollback a deploy via Trellis if URL HTTP status codes are not all 200 okay
-    parameters: &rollback_if_twoohoh_fail
-      <<: *twoohoh_parameters
-      <<: *deploy_trellis_parameters
-    steps:
-      - run: npx @itinerisltd/twoohoh --version
-      # TODO: Rollback to specific `--release`
-      - deploy:
-          command: (npx @itinerisltd/twoohoh << parameters.urls >>)|| ((trellis rollback << parameters.site_env >> << parameters.site_name >>) && false)
-          working_directory: trellis
-          when: always
 
 prepare_step_parameters: &prepare_step_parameters
   trellis_repo: << parameters.trellis_repo >>
@@ -158,6 +132,9 @@ jobs:
       <<: *add_ssh_known_hosts_parameters
       <<: *prepare_parameters
       <<: *deploy_trellis_parameters
+      executor:
+        type: executor
+        default: default
     executor: << parameters.executor >>
     steps:
       - print_versions
@@ -169,10 +146,17 @@ jobs:
           <<: *deploy_trellis_step_parameters
 
   trellis_exec:
+    description: |
+      Run `trellis exec` command via CircleCI
+      Expecting Trellis and Bedrock to be 2 separate repositories https://github.com/roots/trellis/issues/883#issuecomment-329052189
+      Expecting build steps do not require local Bedrock source code https://github.com/roots/trellis/pull/997 OR https://github.com/roots/trellis/pull/1030
     parameters:
       <<: *add_ssh_known_hosts_parameters
       <<: *prepare_parameters
       <<: *trellis_exec_parameters
+      executor:
+        type: executor
+        default: default
     executor: << parameters.executor >>
     steps:
       - print_versions
@@ -182,39 +166,6 @@ jobs:
           <<: *prepare_step_parameters
       - trellis_exec:
           <<: *trellis_exec_step_parameters
-
-  deploy_with_auto_rollback:
-    description: |
-      Deploy Trellis, Bedrock and Sage(optional) via CircleCI
-      Expecting Trellis and Bedrock to be 2 separate repositories https://github.com/roots/trellis/issues/883#issuecomment-329052189
-      Expecting build steps do not require local Bedrock source code https://github.com/roots/trellis/pull/997 OR https://github.com/roots/trellis/pull/1030
-      Check url status codes before and after deploy
-      Skip deploy or auto-rollback if urls are not 200 okay
-      1. Check urls are all 200 okay
-      2. if not, quit
-      3. `$ trellis deploy production example.com`
-      4. Check urls are all 200 okay again
-      5. If not, `$ trellis rollback production example.com`
-    parameters:
-      <<: *twoohoh_parameters
-      <<: *add_ssh_known_hosts_parameters
-      <<: *prepare_parameters
-      <<: *deploy_trellis_parameters
-      <<: *rollback_if_twoohoh_fail
-    executor: << parameters.executor >>
-    steps:
-      - print_versions
-      - twoohoh:
-          urls: << parameters.urls >>
-      - add_ssh_known_hosts:
-          known_hosts: << parameters.known_hosts >>
-      - prepare:
-          <<: *prepare_step_parameters
-      - deploy_trellis:
-          <<: *deploy_trellis_step_parameters
-      - rollback_if_twoohoh_fail:
-          <<: *deploy_trellis_step_parameters
-          urls: << parameters.urls >>
 
 executors:
   default:
@@ -233,10 +184,9 @@ examples:
       orbs:
         tiller-circleci: itinerisltd/tiller-circleci@0.6
 
-      deploy-config: &deploy-config
+      preare_config: &preare_config
         known_hosts: 'github.com, 123.123.123.123'
         trellis_repo: 'git@github.com:ItinerisLtd/my-trellis-repo.git'
-        site_name: itineris
 
       critical_urls: &critical_urls 'https://itineris.co.uk/ https://itineris.co.uk/wp-json/'
 
@@ -245,8 +195,19 @@ examples:
           jobs:
             - tiller-circleci/deploy:
                 name: deploy-staging
-                <<: *deploy-config
+                <<: *preare_config
                 site_env: staging
+                site_name: itineris
+                filters:
+                  branches:
+                    only: staging
+
+        trellis_exec:
+          jobs:
+            - tiller-circleci/trellis_exec:
+                name: custom-playbook-staging
+                <<: *preare_config
+                command: ansible-playbook my-custom-playbook.yml -e env=staging -e site=itineris
                 filters:
                   branches:
                     only: staging
@@ -259,8 +220,9 @@ examples:
                   branches:
                     only: master
             - tiller-circleci/deploy:
-                <<: *deploy-config
+                <<: *preare_config
                 site_env: production
+                site_name: itineris
                 requires:
                   - hold
                 filters:
@@ -275,7 +237,10 @@ examples:
                   branches:
                     only: master
           jobs:
-            - tiller-circleci/deploy_with_auto_rollback:
-                <<: *deploy-config
+            - tiller-circleci/deploy:
+                <<: *preare_config
                 site_env: production
-                urls: *critical_urls
+                site_name: itineris
+                filters:
+                  branches:
+                    only: master
