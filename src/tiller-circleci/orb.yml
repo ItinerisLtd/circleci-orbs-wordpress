@@ -176,19 +176,18 @@ examples:
   hold-deploy:
     description: |
       Deploy to staging on push
+      Run custom playbook on custom branch
       Deploy to production after manual approval
       Deploy with auto-rollback to production at 06:00 UTC daily
     usage:
       version: 2.1
 
       orbs:
-        tiller-circleci: itinerisltd/tiller-circleci@0.6
+        tiller-circleci: itinerisltd/tiller-circleci@0.8
 
       preare_config: &preare_config
         known_hosts: 'github.com, 123.123.123.123'
         trellis_repo: 'git@github.com:ItinerisLtd/my-trellis-repo.git'
-
-      critical_urls: &critical_urls 'https://itineris.co.uk/ https://itineris.co.uk/wp-json/'
 
       workflows:
         deploy:
@@ -205,12 +204,12 @@ examples:
         trellis_exec:
           jobs:
             - tiller-circleci/trellis_exec:
-                name: custom-playbook-staging
+                name: custom-playbook
                 <<: *preare_config
-                command: ansible-playbook my-custom-playbook.yml -e env=staging -e site=itineris
+                command: ansible-playbook my-custom-playbook.yml -e env=custom -e site=itineris
                 filters:
                   branches:
-                    only: staging
+                    only: custom
 
         deploy-production-with-manual-approval:
           jobs:
